@@ -13,7 +13,8 @@ const fullScreenFrag = regl({
         }`,
     uniforms: {
         color: regl.prop('color'),
-        screenSize: regl.prop('screenSize')
+        screenSize: regl.prop('screenSize'),
+        time: regl.prop('time')
     },
     attributes: {
         position: regl.buffer([
@@ -28,9 +29,10 @@ const fullScreenFrag = regl({
     count: 6,
 });
 
-regl.frame(() => {
+regl.frame(({ time }) => {
     fullScreenFrag({
         color: [1, 0, 0, 1],
         screenSize: [window.innerWidth, window.innerHeight],
+        time
     });
 });

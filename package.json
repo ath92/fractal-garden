@@ -4,12 +4,15 @@
   "description": "raymarching with regl attempt",
   "scripts": {
     "dev": "parcel index.html",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "parcel build index.html"
   },
-  "author": "tom hutman",
+  "author": "Tom Hutman",
   "license": "MIT",
   "dependencies": {
     "glslify": "^7.0.0",
     "regl": "^1.4.2"
+  },
+  "devDependencies": {
+    "parcel": "^1.12.4"
   }
 }
