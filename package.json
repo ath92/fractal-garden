@@ -1,0 +1,15 @@
+{
+  "name": "raymarching",
+  "version": "1.0.0",
+  "description": "raymarching with regl attempt",
+  "scripts": {
+    "dev": "parcel index.html",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "tom hutman",
+  "license": "MIT",
+  "dependencies": {
+    "glslify": "^7.0.0",
+    "regl": "^1.4.2"
+  }
+}
