@@ -5,7 +5,7 @@ uniform float time;
 uniform vec3 cameraPosition;
 uniform mat4 cameraDirection;
 
-const int MAX_ITER = 256;
+const int MAX_ITER = 120;
 const float HIT_THRESHOLD = 0.01;
 
 vec3 getRay() {
@@ -30,21 +30,17 @@ vec3 opRepeat(vec3 p, vec3 distance) {
 float doModel(vec3 p) {
     vec3 spherePosition = vec3(0, 0, 0); // cannot change this position combined with opRepeat for now, need to figure out how to fix that.
     float sphereRadius = 1.;
-    float floorY = 42.;
 
-    float sphereRepeat = 10.;
+    float sphereRepeat = 6.;
 
-    float sint = 10. * sin(0.05 * time); // ~2PI
+    float sint = 10. * sin(mod(0.15 * time, 6.38));
 
     vec3 p2 = vec3(p.x + sin(p.z / 10. * 0.1 * sint), p.y + cos(p.z / 10. * 0.1 * sint), p.z);
 
-    return min(
-        sphere(
-            opRepeat(p, vec3(sphereRepeat)),
-            spherePosition,
-            1.
-        ),
-        floor(p, floorY)
+    return sphere(
+        opRepeat(p2, vec3(sphereRepeat)),
+        spherePosition,
+        1.
     );
 
     return sphere(p, spherePosition, 1.);
@@ -74,8 +70,7 @@ vec3 calcNormal(vec3 p) {
 vec3 globalIlluminationDirection = normalize(vec3(1, -1, -1));
 float getIllumination(vec3 collision, int iterations) {
     vec3 n = calcNormal(collision);
-    float occlusionLight = 1. - float(iterations) / float(MAX_ITER);
-    return occlusionLight;
+    // float occlusionLight = 1. - float(iterations) / float(MAX_ITER);
     return dot(n, globalIlluminationDirection);
 }
 
@@ -95,7 +90,7 @@ void main() {
     gl_FragColor = vec4(
         color * 0.5 + 0.5 * sin(collision.x + time),
         color,
-        color * 0.5 + 0.5 * cos(collision.z + time),
+        color * 0.5 + 0.5 * sin(collision.z + time),
         1.
     );
 }

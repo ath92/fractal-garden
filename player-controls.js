@@ -23,6 +23,8 @@ export default class PlayerControls {
             right: false,
         };
 
+        this.onPointerLock = () => {};
+
         this.handleKeyboardEvent = keyboardEvent => {
             const { code, type } = keyboardEvent;
             const value = type === 'keydown';
@@ -50,7 +52,7 @@ export default class PlayerControls {
 
         document.addEventListener('pointerlockchange', () => {
             this.hasPointerLock = !!document.pointerLockElement;
-            console.log(this.hasPointerLock, this);
+            this.onPointerLock(this.hasPointerLock);
         }, false);
 
         document.addEventListener('mousemove', e => {

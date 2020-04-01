@@ -4,6 +4,13 @@ import PlayerControls from './player-controls';
 
 const playerControls = new PlayerControls();
 
+playerControls.onPointerLock = val => {
+    const message = document.querySelector('.message');
+    if (val && message) {
+        message.remove();
+    }
+}
+
 const regl = Regl(); // no params = full screen canvas
 
 const fullScreenFrag = regl({
