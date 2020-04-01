@@ -7,6 +7,7 @@ uniform mat4 cameraDirection; // mat4 because gl-matrix has nice simple lookAt h
 
 const int MAX_ITER = 120;
 const float HIT_THRESHOLD = 0.01;
+const float PI = 3.14159265359;
 
 vec3 getRay() {
     // normalize fragCoord.xy to vec2 ranging from [-1, -1] to [1, 1]
@@ -34,7 +35,7 @@ float doModel(vec3 p) {
     float sphereRepeat = 6.;
 
     // this is probably not a proper SDF anymore, but it looks cool
-    float sint = 10. * sin(mod(0.15 * time, 6.38));
+    float sint = 10. * sin(mod(0.15 * time, 2. * PI));
     vec3 p2 = vec3(p.x + sin(p.z / 10. * 0.1 * sint), p.y + cos(p.z / 10. * 0.1 * sint), p.z);
 
     return sphere(
