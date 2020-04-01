@@ -1,4 +1,5 @@
 import { vec3, mat4, vec4 } from 'gl-matrix';
+import isMobile from 'is-mobile';
 
 const origin = vec3.fromValues(0, 0, 0);
 const forward = vec3.fromValues(0, 0, 1);
@@ -7,21 +8,25 @@ const rotateLeft = mat4.fromYRotation(mat4.create(), -0.5 * Math.PI);
 const rotateRight = mat4.fromYRotation(mat4.create(), 0.5 * Math.PI);
 
 export default class PlayerControls {
-    constructor(speed = 0.15, mouseSensitivity = 0.0015) {
+    constructor(speed = 0.15, mouseSensitivity = 0.0015, touchSensitivity = 0.15) {
         // TODO: cleanup event listeners
         this.speed = speed;
         this.mouseSensitivity = mouseSensitivity;
+        this.touchSensitivity = touchSensitivity;
         this.position = vec3.fromValues(0, 0, -5);
         this.direction = vec3.fromValues(0, 0, 1);
         this.hasPointerLock = false;
         this.mouseX = 0;
         this.mouseY = 0;
+        this.touchX = 0;
+        this.touchY = 0;
         this.directionKeys = {
             forward: false,
             backward: false,
             left: false,
             right: false,
         };
+        this.isTouching = false;
 
         this.onPointerLock = () => {};
 
@@ -34,11 +39,17 @@ export default class PlayerControls {
             if (code === 'KeyD' || code === 'ArrowRight') this.directionKeys.right = value;
         };
 
+        this.onTouchEvent = touchEvent => {
+            const lastTouch = touchEvent.touches[touchEvent.touches.length - 1];
+            this.touchX = lastTouch.clientX;
+            this.touchY = lastTouch.clientY;
+        };
+
         document.addEventListener('keydown', this.handleKeyboardEvent);
         document.addEventListener('keyup', this.handleKeyboardEvent);
 
-
         document.addEventListener('mousedown', () => {
+            if (isMobile()) return;
             document.querySelector('body').requestPointerLock();
             const transformedDir = vec4.transformMat4([], vec4.fromValues(...forward, 0), this.directionMatrix);
             console.log(
@@ -61,10 +72,29 @@ export default class PlayerControls {
             this.mouseY += e.movementY;
         });
 
+        document.addEventListener('touchstart', e => {
+            this.directionKeys.forward = true;
+            this.isTouching = true;
+            this.onTouchEvent(e);
+            this.onPointerLock(true);
+        });
+
+        document.addEventListener('touchmove', this.onTouchEvent);
+
+        document.addEventListener('touchend', () => {
+            this.directionKeys.forward = false;
+            this.isTouching = false;
+        });
+
         requestAnimationFrame(() => this.loop());
     }
     
     loop() {
+        if (this.isTouching) {
+            this.mouseX += (this.touchX - window.innerWidth / 2) * this.touchSensitivity;
+            this.mouseY += (this.touchY - window.innerHeight / 2) * this.touchSensitivity;
+        }
+
         const newDirection = vec3.clone(forward);
         vec3.rotateX(newDirection, newDirection, origin, -this.mouseY * this.mouseSensitivity);
         vec3.rotateY(newDirection, newDirection, origin, this.mouseX * this.mouseSensitivity);
