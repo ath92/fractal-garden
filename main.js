@@ -1,5 +1,8 @@
 import Regl from 'regl';
 import frag from './frag.glsl';
+import PlayerControls from './player-controls';
+
+const playerControls = new PlayerControls();
 
 const regl = Regl(); // no params = full screen canvas
 
@@ -14,7 +17,9 @@ const fullScreenFrag = regl({
     uniforms: {
         color: regl.prop('color'),
         screenSize: regl.prop('screenSize'),
-        time: regl.prop('time')
+        time: regl.prop('time'),
+        cameraPosition: regl.prop('cameraPosition'),
+        cameraDirection: regl.prop('cameraDirection'),
     },
     attributes: {
         position: regl.buffer([
@@ -33,6 +38,8 @@ regl.frame(({ time }) => {
     fullScreenFrag({
         color: [1, 0, 0, 1],
         screenSize: [window.innerWidth, window.innerHeight],
-        time
+        time,
+        cameraDirection: playerControls.directionMatrix,
+        cameraPosition: playerControls.position
     });
 });

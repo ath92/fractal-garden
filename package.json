@@ -9,6 +9,7 @@
   "author": "Tom Hutman",
   "license": "MIT",
   "dependencies": {
+    "gl-matrix": "^3.2.1",
     "glslify": "^7.0.0",
     "regl": "^1.4.2"
   },
