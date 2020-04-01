@@ -41,10 +41,10 @@ const fullScreenFrag = regl({
     count: 6,
 });
 
-regl.frame(({ time }) => {
+regl.frame(({ time, viewportWidth, viewportHeight }) => {
     fullScreenFrag({
         color: [1, 0, 0, 1],
-        screenSize: [window.innerWidth, window.innerHeight],
+        screenSize: [viewportWidth, viewportHeight],
         time,
         cameraDirection: playerControls.directionMatrix,
         cameraPosition: playerControls.position
