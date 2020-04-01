@@ -3,7 +3,7 @@ uniform vec4 color;
 uniform vec2 screenSize;
 uniform float time;
 uniform vec3 cameraPosition;
-uniform mat4 cameraDirection;
+uniform mat4 cameraDirection; // mat4 because gl-matrix has nice simple lookAt helper fn
 
 const int MAX_ITER = 120;
 const float HIT_THRESHOLD = 0.01;
@@ -18,11 +18,12 @@ vec3 getRay() {
 float sphere(vec3 p, vec3 c, float radius) { // p = point in space, c = center of sphere
     return distance(c, p) - radius;
 }
-
+// not used right now, but gonna leave it in for later maybe
 float floor(vec3 p, float y) {
     return y - p.y;
 }
 
+// stole this from iq
 vec3 opRepeat(vec3 p, vec3 distance) {
     return mod(p + 0.5 * distance, distance) - 0.5 * distance;
 }
@@ -30,11 +31,10 @@ vec3 opRepeat(vec3 p, vec3 distance) {
 float doModel(vec3 p) {
     vec3 spherePosition = vec3(0, 0, 0); // cannot change this position combined with opRepeat for now, need to figure out how to fix that.
     float sphereRadius = 1.;
-
     float sphereRepeat = 6.;
 
+    // this is probably not a proper SDF anymore, but it looks cool
     float sint = 10. * sin(mod(0.15 * time, 6.38));
-
     vec3 p2 = vec3(p.x + sin(p.z / 10. * 0.1 * sint), p.y + cos(p.z / 10. * 0.1 * sint), p.z);
 
     return sphere(
@@ -45,7 +45,7 @@ float doModel(vec3 p) {
 
     return sphere(p, spherePosition, 1.);
 }
-
+// this is kinda contrived and does a bunch of stuff I'm not using right now, but I'll leave it like this for now
 vec3 trace(vec3 origin, vec3 direction, out int iterations, out float nearest) {
     vec3 position = origin;
     for(int i = 0; i < MAX_ITER; i++) {
@@ -57,7 +57,7 @@ vec3 trace(vec3 origin, vec3 direction, out int iterations, out float nearest) {
     }
     return position;
 }
-
+// stole this from iq
 vec3 calcNormal(vec3 p) {
     const float h = 0.0001;
     const vec2 k = vec2(1,-1);
@@ -67,11 +67,11 @@ vec3 calcNormal(vec3 p) {
                       k.xxx*doModel( p + k.xxx*h ) );
 }
 
-vec3 globalIlluminationDirection = normalize(vec3(1, -1, -1));
+vec3 lightDirection = normalize(vec3(1, -1, -1));
 float getIllumination(vec3 collision, int iterations) {
     vec3 n = calcNormal(collision);
     // float occlusionLight = 1. - float(iterations) / float(MAX_ITER);
-    return dot(n, globalIlluminationDirection);
+    return dot(n, lightDirection);
 }
 
 void main() {
@@ -86,7 +86,7 @@ void main() {
     if (iterations < MAX_ITER - 1) { // actual collision
         color = getIllumination(collision, iterations);
     }
-
+    // some cheeky colors here, because why not
     gl_FragColor = vec4(
         color * 0.5 + 0.5 * sin(collision.x + time),
         color,
