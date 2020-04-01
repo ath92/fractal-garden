@@ -11,7 +11,7 @@ export default class PlayerControls {
         // TODO: cleanup event listeners
         this.speed = speed;
         this.mouseSensitivity = mouseSensitivity;
-        this.position = vec3.fromValues(0, 0, 0);
+        this.position = vec3.fromValues(0, 0, -5);
         this.direction = vec3.fromValues(0, 0, 1);
         this.hasPointerLock = false;
         this.mouseX = 0;

@@ -28,7 +28,7 @@ vec3 opRepeat(vec3 p, vec3 distance) {
 }
 
 float doModel(vec3 p) {
-    vec3 spherePosition = vec3(0, 0, 3);
+    vec3 spherePosition = vec3(0, 0, 0); // cannot change this position combined with opRepeat for now, need to figure out how to fix that.
     float sphereRadius = 1.;
     float floorY = 42.;
 
@@ -38,11 +38,16 @@ float doModel(vec3 p) {
 
     vec3 p2 = vec3(p.x + sin(p.z / 10. * 0.1 * sint), p.y + cos(p.z / 10. * 0.1 * sint), p.z);
 
-    return sphere(
-        opRepeat(p, vec3(10.)),
-        spherePosition,
-        1.
+    return min(
+        sphere(
+            opRepeat(p, vec3(sphereRepeat)),
+            spherePosition,
+            1.
+        ),
+        floor(p, floorY)
     );
+
+    return sphere(p, spherePosition, 1.);
 }
 
 vec3 trace(vec3 origin, vec3 direction, out int iterations, out float nearest) {
@@ -87,11 +92,12 @@ void main() {
         color = getIllumination(collision, iterations);
     }
 
-    gl_FragColor = vec4(direction * vec3(
+    gl_FragColor = vec4(
         color * 0.5 + 0.5 * sin(collision.x + time),
         color,
-        color * 0.5 + 0.5 * cos(collision.z + time)
-        ), 1.);
+        color * 0.5 + 0.5 * cos(collision.z + time),
+        1.
+    );
 }
 
 // lighting and material
