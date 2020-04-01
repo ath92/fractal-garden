@@ -1,6 +1,7 @@
 import Regl from 'regl';
 import frag from './frag.glsl';
 import PlayerControls from './player-controls';
+import isMobile from 'is-mobile';
 
 const playerControls = new PlayerControls();
 
@@ -10,6 +11,8 @@ playerControls.onPointerLock = val => {
         message.remove();
     }
 }
+
+if (isMobile()) playerControls.onPointerLock();
 
 const regl = Regl(); // no params = full screen canvas
 

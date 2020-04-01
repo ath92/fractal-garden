@@ -81,10 +81,14 @@ export default class PlayerControls {
 
         document.addEventListener('touchmove', this.onTouchEvent);
 
-        document.addEventListener('touchend', () => {
+        const onTouchOver = () => {
             this.directionKeys.forward = false;
             this.isTouching = false;
-        });
+        }
+
+        document.addEventListener('touchend', onTouchOver);
+        document.addEventListener('touchcancel', onTouchOver);
+        document.addEventListener('mouseup', onTouchOver);
 
         requestAnimationFrame(() => this.loop());
     }
