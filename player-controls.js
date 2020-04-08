@@ -8,7 +8,7 @@ const rotateLeft = mat4.fromYRotation(mat4.create(), -0.5 * Math.PI);
 const rotateRight = mat4.fromYRotation(mat4.create(), 0.5 * Math.PI);
 
 export default class PlayerControls {
-    constructor(speed = 0.15, mouseSensitivity = 0.0015, touchSensitivity = 0.15) {
+    constructor(speed = 0.015, mouseSensitivity = 0.0015, touchSensitivity = 0.15) {
         // TODO: cleanup event listeners
         this.speed = speed;
         this.mouseSensitivity = mouseSensitivity;
