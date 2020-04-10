@@ -14,7 +14,10 @@ playerControls.onPointerLock = val => {
 
 if (isMobile()) playerControls.onPointerLock();
 
-const regl = Regl(); // no params = full screen canvas
+const regl = Regl({
+    // 720p should be enough for most intents and purposes, above that performance suffers
+    pixelRatio: Math.min(1, 1600 * 900 / (window.innerWidth * window.innerHeight)),
+}); // no params = full screen canvas
 
 const fullScreenFrag = regl({
     frag,
