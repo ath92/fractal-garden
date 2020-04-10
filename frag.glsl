@@ -32,7 +32,7 @@ vec3 opRepeat(vec3 p, vec3 distance) {
     return mod(p + 0.5 * distance, distance) - 0.5 * distance;
 }
 
-const int MENGER_ITERATIONS = 4;
+const int MENGER_ITERATIONS = 5;
 float menger(vec3 p, float b, float h) {
     float box = box(p, b);
     float holes = makeHoles(p, h);

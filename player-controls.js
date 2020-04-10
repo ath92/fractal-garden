@@ -7,8 +7,16 @@ const up = vec3.fromValues(0, 1, 0);
 const rotateLeft = mat4.fromYRotation(mat4.create(), -0.5 * Math.PI);
 const rotateRight = mat4.fromYRotation(mat4.create(), 0.5 * Math.PI);
 
+function getTouchEventCoordinates(touchEvent) {
+    const lastTouch = touchEvent.touches[touchEvent.touches.length - 1];
+    return {
+        x: lastTouch.clientX,
+        y: lastTouch.clientY,
+    }
+}
+
 export default class PlayerControls {
-    constructor(speed = 0.015, mouseSensitivity = 0.0015, touchSensitivity = 0.15) {
+    constructor(speed = 0.015, mouseSensitivity = 0.0015, touchSensitivity = 0.08) {
         // TODO: cleanup event listeners
         this.speed = speed;
         this.mouseSensitivity = mouseSensitivity;
@@ -20,6 +28,8 @@ export default class PlayerControls {
         this.mouseY = 0;
         this.touchX = 0;
         this.touchY = 0;
+        this.touchStartX = window.innerWidth / 2;
+        this.touchStartY = window.innerHeight / 2;
         this.directionKeys = {
             forward: false,
             backward: false,
@@ -39,26 +49,12 @@ export default class PlayerControls {
             if (code === 'KeyD' || code === 'ArrowRight') this.directionKeys.right = value;
         };
 
-        this.onTouchEvent = touchEvent => {
-            const lastTouch = touchEvent.touches[touchEvent.touches.length - 1];
-            this.touchX = lastTouch.clientX;
-            this.touchY = lastTouch.clientY;
-        };
-
         document.addEventListener('keydown', this.handleKeyboardEvent);
         document.addEventListener('keyup', this.handleKeyboardEvent);
 
         document.addEventListener('mousedown', () => {
             if (isMobile()) return;
             document.querySelector('body').requestPointerLock();
-            const transformedDir = vec4.transformMat4([], vec4.fromValues(...forward, 0), this.directionMatrix);
-            console.log(
-                'position', this.position,
-                'direction', this.direction,
-                'directionMatrix', this.directionMatrix,
-                'pos + dir', vec3.add([], this.position, this.direction),
-                'transformed Direction', transformedDir
-            );
         });
 
         document.addEventListener('pointerlockchange', () => {
@@ -75,11 +71,20 @@ export default class PlayerControls {
         document.addEventListener('touchstart', e => {
             this.directionKeys.forward = true;
             this.isTouching = true;
-            this.onTouchEvent(e);
+            const { x, y } = getTouchEventCoordinates(e);
+            this.touchX = x;
+            this.touchY = y;
+            this.touchStartX = x;
+            this.touchStartY = y;
             this.onPointerLock(true);
         });
 
-        document.addEventListener('touchmove', this.onTouchEvent);
+        document.addEventListener('touchmove', e => {
+            const { x, y } = getTouchEventCoordinates(e);
+            this.touchX = x;
+            this.touchY = y;
+            console.log('happening');
+        });
 
         const onTouchOver = () => {
             this.directionKeys.forward = false;
@@ -95,8 +100,8 @@ export default class PlayerControls {
     
     loop() {
         if (this.isTouching) {
-            this.mouseX += (this.touchX - window.innerWidth / 2) * this.touchSensitivity;
-            this.mouseY += (this.touchY - window.innerHeight / 2) * this.touchSensitivity;
+            this.mouseX += (this.touchX - this.touchStartX) * this.touchSensitivity;
+            this.mouseY += (this.touchY - this.touchStartY) * this.touchSensitivity;
         }
 
         const newDirection = vec3.clone(forward);
@@ -105,14 +110,16 @@ export default class PlayerControls {
         vec3.copy(this.direction, newDirection);
     
 		const deltaPosition = vec3.clone(newDirection);
-        vec3.scale(deltaPosition, deltaPosition, this.speed);
     
         // strafing with keys
         const diff = vec3.create();
+        const flat = vec3.normalize(vec3.create(), vec3.fromValues(deltaPosition[0], 0, deltaPosition[2]));
         if (this.directionKeys.forward) vec3.add(diff, diff, deltaPosition);
         if (this.directionKeys.backward) vec3.add(diff, diff, vec3.negate(vec3.create(), deltaPosition));
-        if (this.directionKeys.left) vec3.add(diff, diff, vec3.transformMat4(vec3.create(), deltaPosition, rotateLeft));
-        if (this.directionKeys.right) vec3.add(diff, diff, vec3.transformMat4(vec3.create(), deltaPosition, rotateRight));
+        if (this.directionKeys.left) vec3.add(diff, diff, vec3.transformMat4(vec3.create(), flat, rotateLeft));
+        if (this.directionKeys.right) vec3.add(diff, diff, vec3.transformMat4(vec3.create(), flat, rotateRight));
+        vec3.normalize(diff, diff);
+        vec3.scale(diff, diff, this.speed);
     
         vec3.add(this.position, this.position, diff);
     
