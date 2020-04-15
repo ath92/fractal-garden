@@ -81,7 +81,7 @@ float getIllumination(vec3 collision, int iterations) {
     // return dot(n, lightDirection);
 }
 
-const float col = 0.05; // amount of coloring
+// const float col = 0.05; // amount of coloring
 
 void main() {
     vec3 direction = getRay();
@@ -92,13 +92,10 @@ void main() {
     if (iterations < MAX_ITER - 1) { // actual collision
         brightness = getIllumination(collision, iterations);
     }
-    // some cheeky colours here, because why not
     gl_FragColor = vec4(
-        brightness * (1. - col) + col * sin(collision.x + time),
         brightness,
-        brightness * (1. - col) + col * sin(collision.z + time),
+        brightness,
+        brightness,
         1.
     );
 }
-
-// lighting and material
