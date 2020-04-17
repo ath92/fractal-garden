@@ -15,13 +15,20 @@
                 font-size: 20px;
                 padding: 20px;
                 box-sizing: border-box;
+                line-height: 1.6em;
+            }
+
+            a {
+                color: white;
             }
         </style>
         <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body>
-        <div class="message" onclick="console.log('hallo')">
-            Click to look around, WASD / Arrow keys to move around
+        <div class="message">
+            Click to look around, WASD / Arrow keys to move around.<br />
+            On mobile: tap and hold to move, drag to change direction.<br />
+            <a href="https://github.com/ath92/regl-raymarching" target="_blank">GitHub</a>
         </div>
         <script src="main.js"></script>
     </body>

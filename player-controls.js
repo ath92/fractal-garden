@@ -1,5 +1,4 @@
 import { vec3, mat4, vec4 } from 'gl-matrix';
-import isMobile from 'is-mobile';
 
 const origin = vec3.fromValues(0, 0, 0);
 const forward = vec3.fromValues(0, 0, 1);
@@ -52,8 +51,11 @@ export default class PlayerControls {
         document.addEventListener('keydown', this.handleKeyboardEvent);
         document.addEventListener('keyup', this.handleKeyboardEvent);
 
-        document.addEventListener('mousedown', () => {
-            if (isMobile()) return;
+        document.addEventListener('mousedown', e => {
+            console.log(e.target)
+            if (e.target.tagName === 'A') {
+                return;
+            }
             document.querySelector('body').requestPointerLock();
         });
 
