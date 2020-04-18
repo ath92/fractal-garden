@@ -14,7 +14,7 @@ function getTouchEventCoordinates(touchEvent) {
 }
 
 export default class PlayerControls {
-    constructor(speed = 0.015, mouseSensitivity = 0.15, touchSensitivity = 0.08) {
+    constructor(speed = 0.015, mouseSensitivity = 0.15, touchSensitivity = 0.012) {
         // TODO: cleanup event listeners
         this.speed = speed;
         this.mouseSensitivity = mouseSensitivity;
@@ -84,7 +84,6 @@ export default class PlayerControls {
             const { x, y } = getTouchEventCoordinates(e);
             this.touchX = x;
             this.touchY = y;
-            console.log('happening');
         });
 
         const onTouchOver = () => {
