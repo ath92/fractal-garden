@@ -1,10 +1,9 @@
-import { vec3, mat4, vec4 } from 'gl-matrix';
+import { vec3, mat4, quat } from 'gl-matrix';
 
-const origin = vec3.fromValues(0, 0, 0);
 const forward = vec3.fromValues(0, 0, 1);
-const up = vec3.fromValues(0, 1, 0);
-const rotateLeft = mat4.fromYRotation(mat4.create(), -0.5 * Math.PI);
-const rotateRight = mat4.fromYRotation(mat4.create(), 0.5 * Math.PI);
+const backward = vec3.fromValues(0, 0, -1);
+const left = vec3.fromValues(-1, 0, 0);
+const right = vec3.fromValues(1, 0, 0);
 
 function getTouchEventCoordinates(touchEvent) {
     const lastTouch = touchEvent.touches[touchEvent.touches.length - 1];
@@ -15,13 +14,13 @@ function getTouchEventCoordinates(touchEvent) {
 }
 
 export default class PlayerControls {
-    constructor(speed = 0.015, mouseSensitivity = 0.0015, touchSensitivity = 0.08) {
+    constructor(speed = 0.015, mouseSensitivity = 0.15, touchSensitivity = 0.08) {
         // TODO: cleanup event listeners
         this.speed = speed;
         this.mouseSensitivity = mouseSensitivity;
         this.touchSensitivity = touchSensitivity;
         this.position = vec3.fromValues(0, 0, -5);
-        this.direction = vec3.fromValues(0, 0, 1);
+        this.direction = quat.create();
         this.hasPointerLock = false;
         this.mouseX = 0;
         this.mouseY = 0;
@@ -66,8 +65,8 @@ export default class PlayerControls {
 
         document.addEventListener('mousemove', e => {
             if (!this.hasPointerLock) return;
-            this.mouseX += e.movementX;
-            this.mouseY += e.movementY;
+            this.mouseX += e.movementX * this.mouseSensitivity;
+            this.mouseY += e.movementY * this.mouseSensitivity;
         });
 
         document.addEventListener('touchstart', e => {
@@ -105,35 +104,31 @@ export default class PlayerControls {
             this.mouseX += (this.touchX - this.touchStartX) * this.touchSensitivity;
             this.mouseY += (this.touchY - this.touchStartY) * this.touchSensitivity;
         }
+        this.mouseY = Math.min(this.mouseY, 90);
+        this.mouseY = Math.max(this.mouseY, -90);
 
-        const newDirection = vec3.clone(forward);
-        vec3.rotateX(newDirection, newDirection, origin, -this.mouseY * this.mouseSensitivity);
-        vec3.rotateY(newDirection, newDirection, origin, this.mouseX * this.mouseSensitivity);
-        vec3.copy(this.direction, newDirection);
-    
-		const deltaPosition = vec3.clone(newDirection);
+        quat.fromEuler(
+            this.direction,
+            -this.mouseY,
+            this.mouseX,
+            0
+        );
     
         // strafing with keys
         const diff = vec3.create();
-        const flat = vec3.normalize(vec3.create(), vec3.fromValues(deltaPosition[0], 0, deltaPosition[2]));
-        if (this.directionKeys.forward) vec3.add(diff, diff, deltaPosition);
-        if (this.directionKeys.backward) vec3.add(diff, diff, vec3.negate(vec3.create(), deltaPosition));
-        if (this.directionKeys.left) vec3.add(diff, diff, vec3.transformMat4(vec3.create(), flat, rotateLeft));
-        if (this.directionKeys.right) vec3.add(diff, diff, vec3.transformMat4(vec3.create(), flat, rotateRight));
+        if (this.directionKeys.forward) vec3.add(diff, diff, forward);
+        if (this.directionKeys.backward) vec3.add(diff, diff, backward);
+        if (this.directionKeys.left) vec3.add(diff, diff, left);
+        if (this.directionKeys.right) vec3.add(diff, diff, right);
         vec3.normalize(diff, diff);
         vec3.scale(diff, diff, this.speed);
-    
+        vec3.transformQuat(diff, diff, this.direction);
         vec3.add(this.position, this.position, diff);
     
         requestAnimationFrame(() => this.loop());
     }
 
     get directionMatrix() {
-        return mat4.targetTo(
-            mat4.create(),
-            this.position,
-            vec3.sub([], this.position, this.direction),
-            up
-        );
+        return mat4.fromQuat(mat4.create(), this.direction);
     }
 }
