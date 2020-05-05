@@ -1,6 +1,7 @@
 precision highp float;
 uniform vec4 color;
 uniform vec2 screenSize;
+uniform vec2 offset;
 uniform float time;
 uniform vec3 cameraPosition;
 uniform mat4 cameraDirection; // mat4 because gl-matrix has nice simple lookAt helper fn
@@ -12,7 +13,7 @@ const float variance = 0.01;
 
 
 vec3 getRay() {
-    vec2 pixel = (gl_FragCoord.xy - 0.5 * screenSize) / min(screenSize.x, screenSize.y);
+    vec2 pixel = (gl_FragCoord.xy - 0.5 * screenSize + offset) / min(screenSize.x, screenSize.y);
     // normalize fragCoord.xy to vec2 ranging from [-1, -1] to [1, 1]
     // normalize to get unit vector
     return (cameraDirection * normalize(vec4(pixel.x, -pixel.y, 1, 0))).xyz;
