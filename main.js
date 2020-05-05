@@ -37,12 +37,12 @@ const createPingPongBuffers = textureOptions => {
     }
 };
 
-const getSDFFBO = createPingPongBuffers({
+let getSDFFBO = createPingPongBuffers({
     width: Math.round(window.innerWidth / 2),
     height: Math.round(window.innerHeight / 2)
 });
 
-const getScreenFBO = createPingPongBuffers({
+let getScreenFBO = createPingPongBuffers({
     width: Math.round(window.innerWidth),
     height: Math.round(window.innerHeight)
 });
@@ -80,7 +80,7 @@ const renderSDF = regl({
 const drawTexture = regl({
     vert: passThroughVert,
     frag: `
-        precision mediump float;
+        precision highp float;
         uniform sampler2D texture;
         varying vec2 uv;
 
@@ -101,19 +101,20 @@ const drawTexture = regl({
 const upSample = regl({
     vert: passThroughVert,
     frag: `
-        precision mediump float;
+        precision highp float;
         uniform sampler2D sample;
         uniform sampler2D previous;
         uniform vec2 offset;
         uniform vec2 repeat;
-        varying vec2 uv;
+        varying vec2 uv; // ranging from (-1, -1) to (1, 1)
 
         const vec2 pixelOffset = vec2(0.5, 0.5);
 
         float getMixFactor () {
-            vec2 position = gl_FragCoord.xy - pixelOffset + offset;
+            vec2 position = gl_FragCoord.xy - pixelOffset;
             vec2 rest = mod(position, repeat);
-            return 1. - min(max(rest.x, rest.y), 1.);
+            vec2 diff = abs(rest - offset);
+            return 1. - min(max(diff.x, diff.y), 1.);
         }
 
         void main () {
@@ -122,8 +123,13 @@ const upSample = regl({
             // if not:
             // gl_FragColor = texture2D(previous, uv * 0.5 + 0.5);
 
+
             vec4 previousColor = texture2D(previous, uv * 0.5 + 0.5);
             vec4 newColor = texture2D(sample, uv * 0.5 + 0.5);
+            // newColor = vec4((newColor - previousColor).xyz, 1);
+            // newColor = vec4(uv * 0.5 + 0.5, 0, 1);
+
+            // gl_FragColor = vec4((newColor - previousColor).xyz, getMixFactor());
 
             gl_FragColor = mix(previousColor, newColor, getMixFactor());
         }
@@ -143,13 +149,15 @@ const upSample = regl({
 regl.frame(({ time }) => {
     const drawIfOutOfTime = ((threshold) => {
         const start = performance.now();
-        return (callbackOutOfTime, callbackStillTime) => {
-            if (performance.now() - start > threshold || true) {
+        return (callbackStillTime, callbackOutOfTime) => {
+            const timePassed = performance.now() - start;
+            if (timePassed > threshold) {
+                console.log('ran out')
                 return callbackOutOfTime();
             }
             return callbackStillTime();
         };
-    })(1000/60 - 8);
+    })(1000/30 - 1); // threshold = 30fps - 1ms for drawing to screen
 
     const fbo = getSDFFBO();
     fbo.use(() => {
@@ -176,31 +184,6 @@ regl.frame(({ time }) => {
             return null;
         },
     );
-
-    // if (currentScreenBuffer) {
-    //     const newSampleFBO = getSDFFBO();
-    //     newSampleFBO.use(() => {
-    //         renderSDF({
-    //             color: [1, 0, 0, 1],
-    //             screenSize: [texture.width, texture.height],
-    //             time,
-    //             cameraDirection: playerControls.directionMatrix,
-    //             cameraPosition: playerControls.position,
-    //             offset: [1,0]
-    //         });
-    //     });
-
-    //     upSample({
-    //         sample: newSampleFBO,
-    //         previous: currentScreenBuffer,
-    //         repeat: [2, 2],
-    //         offset: [1, 0],
-    //     });
-
-    //     // if there's still time left for another iteration, 
-    //     // don't draw directly to the screen, but into a buffer that can be used for the next iteration instead
-    //     // else just draw directly to the screen.
-    // }
 
     const upSampleIfTimeLeft = (screenBuffer, offset) => drawIfOutOfTime(
         () => {
@@ -233,24 +216,26 @@ regl.frame(({ time }) => {
         }
     );
 
-    // for (let offset of [[1, 0], [1, 1], [0, 1]]) {
-    for (let offset of [[1, 0], [1, 1], [0, 1]]) {
-        currentScreenBuffer = upSampleIfTimeLeft(currentScreenBuffer, offset);
+    for (let offset of [[1, 0], [1, 1], [0, 1], [0, 0]]) {
         if (!currentScreenBuffer) break;
+        currentScreenBuffer = upSampleIfTimeLeft(currentScreenBuffer, offset);
     }
-    drawTexture({ texture: currentScreenBuffer });
-    // now we want to use renderSDF again, but with some offset, and then render that to the screen
-    // rendering = taking newly drawn FBO, and texture of the full screen, and combining that with the offset
-    // need to make sure that previous iterations always render to full screen FBO instead of directly to screen
-    // So instead of rendering / not rendering, it should be draw to FBO / draw directly to screen.
-    // then drawIfOutOfTime can either return a reference to the FBO it drew to, or null
-    // if null, we stop executing for that particular frame, and just continue onto the next one.
-    // (and draw whatever is in the fbo to the screen)
+    
+    // in case we haven't done an early exit yet: draw last screenbuffer to canvas
+    if (currentScreenBuffer) {
+        drawTexture({ texture: currentScreenBuffer });
+    }
 });
 
+// reinit FBO factories on window resize so the textures get resized appropriately
 window.addEventListener('resize', () => {
-    texture = regl.texture({
+    getSDFFBO = createPingPongBuffers({
         width: Math.round(window.innerWidth / 2),
         height: Math.round(window.innerHeight / 2)
+    });
+    
+    getScreenFBO = createPingPongBuffers({
+        width: Math.round(window.innerWidth),
+        height: Math.round(window.innerHeight)
     });
 });
