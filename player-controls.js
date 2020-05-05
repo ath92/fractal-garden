@@ -108,7 +108,7 @@ export default class PlayerControls {
 
         quat.fromEuler(
             this.direction,
-            -this.mouseY,
+            this.mouseY,
             this.mouseX,
             0
         );

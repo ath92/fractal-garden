@@ -16,7 +16,7 @@ vec3 getRay() {
     vec2 pixel = (gl_FragCoord.xy - 0.5 * screenSize + offset) / min(screenSize.x, screenSize.y);
     // normalize fragCoord.xy to vec2 ranging from [-1, -1] to [1, 1]
     // normalize to get unit vector
-    return (cameraDirection * normalize(vec4(pixel.x, -pixel.y, 1, 0))).xyz;
+    return (cameraDirection * normalize(vec4(pixel.x, pixel.y, 1, 0))).xyz;
 }
 
 float makeHoles(vec3 p, float h) {
