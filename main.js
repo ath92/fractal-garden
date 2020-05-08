@@ -69,6 +69,7 @@ const renderSDF = regl({
         cameraPosition: regl.prop('cameraPosition'),
         cameraDirection: regl.prop('cameraDirection'),
         offset: regl.prop('offset'),
+        repeat: regl.prop('repeat'),
     },
     attributes: {
         position
@@ -106,6 +107,7 @@ const upSample = regl({
         uniform sampler2D previous;
         uniform vec2 offset;
         uniform vec2 repeat;
+        uniform vec2 screenSize;
         varying vec2 uv; // ranging from (-1, -1) to (1, 1)
 
         const vec2 pixelOffset = vec2(0.5, 0.5);
@@ -123,9 +125,12 @@ const upSample = regl({
             // if not:
             // gl_FragColor = texture2D(previous, uv * 0.5 + 0.5);
 
+            vec2 pixel = gl_FragCoord.xy - vec2(0.5);
+            pixel = pixel / screenSize;
 
-            vec4 previousColor = texture2D(previous, uv * 0.5 + 0.5);
-            vec4 newColor = texture2D(sample, uv * 0.5 + 0.5);
+
+            vec4 previousColor = texture2D(previous, pixel);
+            vec4 newColor = texture2D(sample, pixel);
             // newColor = vec4((newColor - previousColor).xyz, 1);
             // newColor = vec4(uv * 0.5 + 0.5, 0, 1);
 
@@ -139,6 +144,7 @@ const upSample = regl({
         previous: regl.prop('previous'), // sampler2D
         repeat: regl.prop('repeat'), // vec2
         offset: regl.prop('offset'), // vec2
+        screenSize: regl.prop('screenSize'), // vec2
     },
     attributes: {
         position
@@ -152,7 +158,7 @@ regl.frame(({ time }) => {
         return (callbackStillTime, callbackOutOfTime) => {
             const timePassed = performance.now() - start;
             if (timePassed > threshold) {
-                console.log('ran out')
+                console.log('ran out of time :(');
                 return callbackOutOfTime();
             }
             return callbackStillTime();
@@ -167,7 +173,8 @@ regl.frame(({ time }) => {
             time,
             cameraDirection: playerControls.directionMatrix,
             cameraPosition: playerControls.position,
-            offset: [0,0]
+            offset: [0,0],
+            repeat: [2, 2],
         });
     });
 
@@ -195,7 +202,8 @@ regl.frame(({ time }) => {
                     time,
                     cameraDirection: playerControls.directionMatrix,
                     cameraPosition: playerControls.position,
-                    offset
+                    offset,
+                    repeat: [2, 2],
                 });
             });
 
@@ -206,6 +214,7 @@ regl.frame(({ time }) => {
                     previous: screenBuffer,
                     repeat: [2, 2],
                     offset,
+                    screenSize: [window.innerWidth, window.innerHeight],
                 });
             });
             return newScreenBuffer;
@@ -216,7 +225,7 @@ regl.frame(({ time }) => {
         }
     );
 
-    for (let offset of [[1, 0], [1, 1], [0, 1], [0, 0]]) {
+    for (let offset of [[1, 1], [0, 1], [1, 0]]) {
         if (!currentScreenBuffer) break;
         currentScreenBuffer = upSampleIfTimeLeft(currentScreenBuffer, offset);
     }
