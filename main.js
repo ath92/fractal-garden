@@ -2,6 +2,7 @@ import Regl from 'regl';
 import frag from './frag.glsl';
 import passThroughVert from './pass-through-vert.glsl';
 import PlayerControls from './player-controls';
+import { mat4, vec3 } from 'gl-matrix';
 
 const playerControls = new PlayerControls();
 
@@ -65,7 +66,6 @@ const renderSDF = regl({
     uniforms: {
         color: regl.prop('color'),
         screenSize: regl.prop('screenSize'),
-        time: regl.prop('time'),
         cameraPosition: regl.prop('cameraPosition'),
         cameraDirection: regl.prop('cameraDirection'),
         offset: regl.prop('offset'),
@@ -150,91 +150,128 @@ const upSample = regl({
         position
     },
     count: 6,
-})
+});
 
-regl.frame(({ time }) => {
-    const drawIfOutOfTime = ((threshold) => {
-        const start = performance.now();
-        return (callbackStillTime, callbackOutOfTime) => {
-            const timePassed = performance.now() - start;
-            if (timePassed > threshold) {
-                console.log('ran out of time :(');
-                return callbackOutOfTime();
-            }
-            return callbackStillTime();
-        };
-    })(1000/30 - 1); // threshold = 30fps - 1ms for drawing to screen
-
+function* generateRenderSteps({ cameraDirection, cameraPosition }){
     const fbo = getSDFFBO();
     fbo.use(() => {
         renderSDF({
             color: [1, 0, 0, 1],
             screenSize: [window.innerWidth / 2, window.innerHeight / 2],
-            time,
-            cameraDirection: playerControls.directionMatrix,
-            cameraPosition: playerControls.position,
+            cameraDirection,
+            cameraPosition,
             offset: [0,0],
             repeat: [2, 2],
         });
     });
 
-    let currentScreenBuffer = drawIfOutOfTime(
-        () => {
-            const screenFBO = getScreenFBO();
-            screenFBO.use(() => {
-                drawTexture({ texture: fbo });
-            });
-            return screenFBO;
-        },
-        () => {
-            drawTexture({ texture: fbo });
-            return null;
-        },
-    );
+    yield fbo;
+    
+    // draw 1/4 res SDF FBO to full res FBO
+    let currentScreenBuffer = getScreenFBO();
+    currentScreenBuffer.use(() => {
+        drawTexture({ texture: fbo });
+    });
 
-    const upSampleIfTimeLeft = (screenBuffer, offset) => drawIfOutOfTime(
-        () => {
-            const newSampleFBO = getSDFFBO();
-            newSampleFBO.use(() => {
-                renderSDF({
-                    color: [1, 0, 0, 1],
-                    screenSize: [window.innerWidth / 2, window.innerHeight / 2],
-                    time,
-                    cameraDirection: playerControls.directionMatrix,
-                    cameraPosition: playerControls.position,
-                    offset,
-                    repeat: [2, 2],
-                });
+    const performUpSample = (previousScreenBuffer, offset) => {
+        const newSampleFBO = getSDFFBO();
+        newSampleFBO.use(() => {
+            renderSDF({
+                color: [1, 0, 0, 1],
+                screenSize: [window.innerWidth / 2, window.innerHeight / 2],
+                cameraDirection,
+                cameraPosition,
+                offset,
+                repeat: [2, 2],
             });
+        });
 
-            const newScreenBuffer = getScreenFBO();
-            newScreenBuffer.use(() => {
-                upSample({
-                    sample: newSampleFBO,
-                    previous: screenBuffer,
-                    repeat: [2, 2],
-                    offset,
-                    screenSize: [window.innerWidth, window.innerHeight],
-                });
+        const newScreenBuffer = getScreenFBO();
+        newScreenBuffer.use(() => {
+            upSample({
+                sample: newSampleFBO,
+                previous: previousScreenBuffer,
+                repeat: [2, 2],
+                offset,
+                screenSize: [window.innerWidth, window.innerHeight],
             });
-            return newScreenBuffer;
-        },
-        () => {
-            drawTexture({ texture: screenBuffer });
-            return null;
-        }
-    );
+        });
+        return newScreenBuffer;
+    }
 
     for (let offset of [[1, 1], [0, 1], [1, 0]]) {
-        if (!currentScreenBuffer) break;
-        currentScreenBuffer = upSampleIfTimeLeft(currentScreenBuffer, offset);
+        currentScreenBuffer = performUpSample(currentScreenBuffer, offset);
+        yield currentScreenBuffer;
     }
-    
-    // in case we haven't done an early exit yet: draw last screenbuffer to canvas
-    if (currentScreenBuffer) {
-        drawTexture({ texture: currentScreenBuffer });
+    // also return the current screenbuffer so the last next() on the generator still gives a reference to what needs to be drawn
+    return currentScreenBuffer;
+};
+
+// This controls the FPS (not in an extremely precise way, but good enough)
+// 60fps + 2ms timeslot for drawing to canvasx
+const threshold = 1000 / 60 - 2;
+
+const getCurrentState = (() => {
+    let current;
+    return () => {
+        const newState = {
+            cameraDirection: playerControls.directionMatrix,
+            cameraPosition: vec3.copy(vec3.create(), playerControls.position),
+        };
+        if (!current
+            || !mat4.equals(current.cameraDirection, newState.cameraDirection)
+            || !vec3.equals(current.cameraPosition, newState.cameraPosition)) {
+            current = newState;
+        }
+        return current; 
     }
-});
+})();
+
+function pollForChanges(callbackIfChanges) {
+    const currentState = getCurrentState();
+    (function checkForChanges() {
+        const newState = getCurrentState();
+        if (newState !== currentState) {
+            callbackIfChanges(newState);
+        } else {
+            requestAnimationFrame(checkForChanges);
+        }
+    })();
+}
+
+function onEnterFrame(state) {
+    const start = performance.now();
+    const render = generateRenderSteps(state);
+    (function step() {
+        const { value: fbo, done } = render.next();
+
+        if (done) {
+            drawTexture({
+                texture: fbo
+            });
+            pollForChanges(onEnterFrame);
+            return;
+        }
+
+        const now = performance.now();
+        const newState = getCurrentState();
+        const stateHasChanges = newState !== state;
+        if (stateHasChanges && now - start > threshold) {
+            console.log('bailing early');
+            // out of time, draw to screen
+            drawTexture({
+                texture: fbo
+            });
+            requestAnimationFrame(() => onEnterFrame(newState));
+            return;
+        }
+        
+        // schedule next step on event queue so events can interupt rendering
+        setTimeout(step, 0);
+    })();
+}
+
+onEnterFrame(getCurrentState());
 
 // reinit FBO factories on window resize so the textures get resized appropriately
 window.addEventListener('resize', () => {

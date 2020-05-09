@@ -36,7 +36,7 @@ vec3 opRepeat(vec3 p, vec3 distance) {
     return mod(p + 0.5 * distance, distance) - 0.5 * distance;
 }
 
-const int MENGER_ITERATIONS = 5;
+const int MENGER_ITERATIONS = 6;
 float menger(vec3 p, float b, float h) {
     float box = box(p, b);
     float holes = makeHoles(p, h);
@@ -67,15 +67,6 @@ vec3 trace(vec3 origin, vec3 direction, out int iterations) {
     }
     return position;
 }
-// stole this from iq
-// vec3 calcNormal(vec3 p) {
-//     const float h = 0.0001;
-//     const vec2 k = vec2(1,-1);
-//     return normalize( k.xyy*doModel( p + k.xyy * h ) + 
-//                       k.yyx*doModel( p + k.yyx * h ) + 
-//                       k.yxy*doModel( p + k.yxy * h ) + 
-//                       k.xxx*doModel( p + k.xxx * h ) );
-// }
 
 // vec3 lightDirection = normalize(vec3(1, -1, -1));
 float getIllumination(vec3 collision, int iterations) {
