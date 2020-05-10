@@ -1,6 +1,7 @@
 import Regl from 'regl';
 import frag from './frag.glsl';
 import passThroughVert from './pass-through-vert.glsl';
+import upSampleFrag from './upsample.glsl';
 import PlayerControls from './player-controls';
 import { mat4, vec3 } from 'gl-matrix';
 
@@ -36,18 +37,16 @@ playerControls.onPointerLock = val => {
 
 const regl = Regl({}); // no params = full screen canvas
 
-const sdfTexture = regl.texture({
+// The FBO the actual SDF samples are rendered into
+let sdfTexture = regl.texture({
     width: Math.round(window.innerWidth / repeat[0]),
     height: Math.round(window.innerHeight / repeat[1])
 });
-const getSDFFBO = () => regl.framebuffer({ color: sdfTexture });
+const sdfFBO = regl.framebuffer({ color: sdfTexture });
+const getSDFFBO = () => sdfFBO({ color: sdfTexture });
 
 // We need a double buffer in order to progressively add samples for each render step
-let getScreenFBO = (() => {
-    const textureOptions = {
-        width: Math.round(window.innerWidth),
-        height: Math.round(window.innerHeight)
-    };
+const createPingPongBuffers = textureOptions => {
     const tex1 = regl.texture(textureOptions);
     const tex2 = regl.texture(textureOptions);
     const one = regl.framebuffer({
@@ -64,7 +63,12 @@ let getScreenFBO = (() => {
         }
         return two({ color: tex2 });
     }
-})();
+};
+
+let getScreenFBO = createPingPongBuffers({
+    width: Math.round(window.innerWidth),
+    height: Math.round(window.innerHeight)
+});
 
 // screen-filling rectangle
 const position = regl.buffer([
@@ -118,32 +122,7 @@ const drawToCanvas = regl({
 
 const upSample = regl({
     vert: passThroughVert,
-    frag: `
-        precision highp float;
-        uniform sampler2D sample;
-        uniform sampler2D previous;
-        uniform vec2 offset;
-        uniform vec2 repeat;
-        uniform vec2 screenSize;
-
-        const vec2 pixelOffset = vec2(0.5, 0.5);
-
-        float getMixFactor () {
-            vec2 position = gl_FragCoord.xy - pixelOffset;
-            vec2 rest = mod(position, repeat);
-            vec2 diff = abs(rest - offset);
-            return 1. - min(max(diff.x, diff.y), 1.);
-        }
-
-        void main () {
-            vec2 pixel = gl_FragCoord.xy / screenSize;
-
-            vec4 previousColor = texture2D(previous, pixel);
-            vec4 newColor = texture2D(sample, pixel);
-
-            gl_FragColor = mix(previousColor, newColor, getMixFactor());
-        }
-    `,
+    frag: upSampleFrag,
     uniforms: {
         sample: regl.prop('sample'), // sampler2D
         previous: regl.prop('previous'), // sampler2D
@@ -283,9 +262,9 @@ onEnterFrame(getCurrentState());
 
 // reinit FBO factories on window resize so the textures get resized appropriately
 window.addEventListener('resize', () => {
-    getSDFFBO = createPingPongBuffers({
+    sdfTexture = regl.texture({
         width: Math.round(window.innerWidth / repeat[0]),
-        height: Math.round(window.innerHeight / repeat[1]),
+        height: Math.round(window.innerHeight / repeat[1])
     });
     
     getScreenFBO = createPingPongBuffers({
