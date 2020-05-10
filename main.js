@@ -229,6 +229,10 @@ function onEnterFrame(state) {
     const render = generateRenderSteps(state);
     let i = 0;
     (function step() {
+        // schedule next step on event queue so events can interupt rendering
+        // do it before actually rendering anything so nay browser-controlled inaccuracies to setTimout are less pronounced
+        const nextStep = setTimeout(step, 0);
+
         const { value: fbo, done } = render.next();
         i++;
 
@@ -237,7 +241,7 @@ function onEnterFrame(state) {
                 texture: fbo
             });
             pollForChanges(onEnterFrame);
-            return;
+            clearTimeout(nextStep);
         }
 
         const now = performance.now();
@@ -250,11 +254,8 @@ function onEnterFrame(state) {
                 texture: fbo
             });
             requestAnimationFrame(() => onEnterFrame(newState));
-            return;
+            clearTimeout(nextStep);
         }
-        
-        // schedule next step on event queue so events can interupt rendering
-        setTimeout(step, 0);
     })();
 }
 
