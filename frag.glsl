@@ -1,5 +1,4 @@
 precision highp float;
-uniform vec4 color;
 uniform vec2 screenSize;
 uniform vec2 offset;
 uniform vec2 repeat;
@@ -14,7 +13,7 @@ const float variance = 0.01;
 
 
 vec3 getRay() {
-    vec2 normalizedCoords = gl_FragCoord.xy + (offset / repeat);
+    vec2 normalizedCoords = gl_FragCoord.xy - vec2(0.5) + (offset / repeat);
     vec2 pixel = (normalizedCoords - 0.5 * screenSize) / min(screenSize.x, screenSize.y);
 
     // as if the higher the pixel value, the more the offset is being applied

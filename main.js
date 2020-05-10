@@ -39,8 +39,8 @@ const createPingPongBuffers = textureOptions => {
 };
 
 let getSDFFBO = createPingPongBuffers({
-    width: Math.round(window.innerWidth / 2),
-    height: Math.round(window.innerHeight / 2)
+    width: Math.round(window.innerWidth / 3),
+    height: Math.round(window.innerHeight / 3)
 });
 
 let getScreenFBO = createPingPongBuffers({
@@ -64,7 +64,6 @@ const renderSDF = regl({
     frag,
     vert: passThroughVert,
     uniforms: {
-        color: regl.prop('color'),
         screenSize: regl.prop('screenSize'),
         cameraPosition: regl.prop('cameraPosition'),
         cameraDirection: regl.prop('cameraDirection'),
@@ -120,21 +119,10 @@ const upSample = regl({
         }
 
         void main () {
-            // if we're in one of the "useSample" pixels:
-            // gl_FragColor = texture2D(sample, uv * 0.5 + 0.5);
-            // if not:
-            // gl_FragColor = texture2D(previous, uv * 0.5 + 0.5);
-
-            vec2 pixel = gl_FragCoord.xy - vec2(0.5);
-            pixel = pixel / screenSize;
-
+            vec2 pixel = gl_FragCoord.xy / screenSize;
 
             vec4 previousColor = texture2D(previous, pixel);
             vec4 newColor = texture2D(sample, pixel);
-            // newColor = vec4((newColor - previousColor).xyz, 1);
-            // newColor = vec4(uv * 0.5 + 0.5, 0, 1);
-
-            // gl_FragColor = vec4((newColor - previousColor).xyz, getMixFactor());
 
             gl_FragColor = mix(previousColor, newColor, getMixFactor());
         }
@@ -153,15 +141,16 @@ const upSample = regl({
 });
 
 function* generateRenderSteps({ cameraDirection, cameraPosition }){
+    const repeat = [3, 3];
+
     const fbo = getSDFFBO();
     fbo.use(() => {
         renderSDF({
-            color: [1, 0, 0, 1],
-            screenSize: [window.innerWidth / 2, window.innerHeight / 2],
+            screenSize: [window.innerWidth / repeat[0], window.innerHeight / repeat[1]],
             cameraDirection,
             cameraPosition,
             offset: [0,0],
-            repeat: [2, 2],
+            repeat,
         });
     });
 
@@ -177,12 +166,11 @@ function* generateRenderSteps({ cameraDirection, cameraPosition }){
         const newSampleFBO = getSDFFBO();
         newSampleFBO.use(() => {
             renderSDF({
-                color: [1, 0, 0, 1],
-                screenSize: [window.innerWidth / 2, window.innerHeight / 2],
+                screenSize: [window.innerWidth / repeat[0], window.innerHeight / repeat[1]],
                 cameraDirection,
                 cameraPosition,
                 offset,
-                repeat: [2, 2],
+                repeat,
             });
         });
 
@@ -191,7 +179,7 @@ function* generateRenderSteps({ cameraDirection, cameraPosition }){
             upSample({
                 sample: newSampleFBO,
                 previous: previousScreenBuffer,
-                repeat: [2, 2],
+                repeat,
                 offset,
                 screenSize: [window.innerWidth, window.innerHeight],
             });
@@ -199,7 +187,18 @@ function* generateRenderSteps({ cameraDirection, cameraPosition }){
         return newScreenBuffer;
     }
 
-    for (let offset of [[1, 1], [0, 1], [1, 0]]) {
+    const offsets = [
+        [2, 2],
+        [0, 2],
+        [2, 0],
+        [1, 1],
+        [1, 0],
+        [0, 1],
+        [2, 1],
+        [1, 2]
+    ]
+
+    for (let offset of offsets) {
         currentScreenBuffer = performUpSample(currentScreenBuffer, offset);
         yield currentScreenBuffer;
     }
@@ -257,7 +256,6 @@ function onEnterFrame(state) {
         const newState = getCurrentState();
         const stateHasChanges = newState !== state;
         if (stateHasChanges && now - start > threshold) {
-            console.log('bailing early');
             // out of time, draw to screen
             drawTexture({
                 texture: fbo
