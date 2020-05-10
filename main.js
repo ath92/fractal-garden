@@ -6,6 +6,27 @@ import { mat4, vec3 } from 'gl-matrix';
 
 const playerControls = new PlayerControls();
 
+// The render function is divided into 9 steps;
+// In each step 1/9th (1/3rd horizontal and 1/3 vertical) of all pixels on the screen are rendered
+// If there is not enough time left to maintain a reasonable FPS, the renderer can bail at any time after the first step.
+const repeat = [3, 3];
+
+// Each render step gets an offset ([0, 0] in the first, mandatory step)
+// This controls what pixels are used to draw each render step
+const offsets = [
+    [2, 2],
+    [0, 2],
+    [2, 0],
+    [1, 1],
+    [1, 0],
+    [0, 1],
+    [2, 1],
+    [1, 2]
+];
+// This controls the FPS (not in an extremely precise way, but good enough)
+// 30fps + 4ms timeslot for drawing to canvas and doing other things
+const threshold = 1000 / 30 - 4;
+
 playerControls.onPointerLock = val => {
     const message = document.querySelector('.message');
     if (val && message) {
@@ -13,13 +34,20 @@ playerControls.onPointerLock = val => {
     }
 }
 
-const regl = Regl({
-    // pixelRatio: Math.min(1, 1600 * 900 / (window.innerWidth * window.innerHeight)),
-    // 720p should be enough for most intents and purposes, above that performance suffers
-}); // no params = full screen canvas
+const regl = Regl({}); // no params = full screen canvas
 
-// ping pong fbo
-const createPingPongBuffers = textureOptions => {
+const sdfTexture = regl.texture({
+    width: Math.round(window.innerWidth / repeat[0]),
+    height: Math.round(window.innerHeight / repeat[1])
+});
+const getSDFFBO = () => regl.framebuffer({ color: sdfTexture });
+
+// We need a double buffer in order to progressively add samples for each render step
+let getScreenFBO = (() => {
+    const textureOptions = {
+        width: Math.round(window.innerWidth),
+        height: Math.round(window.innerHeight)
+    };
     const tex1 = regl.texture(textureOptions);
     const tex2 = regl.texture(textureOptions);
     const one = regl.framebuffer({
@@ -36,17 +64,7 @@ const createPingPongBuffers = textureOptions => {
         }
         return two({ color: tex2 });
     }
-};
-
-let getSDFFBO = createPingPongBuffers({
-    width: Math.round(window.innerWidth / 3),
-    height: Math.round(window.innerHeight / 3)
-});
-
-let getScreenFBO = createPingPongBuffers({
-    width: Math.round(window.innerWidth),
-    height: Math.round(window.innerHeight)
-});
+})();
 
 // screen-filling rectangle
 const position = regl.buffer([
@@ -77,7 +95,7 @@ const renderSDF = regl({
 });
 
 // render texture to screen
-const drawTexture = regl({
+const drawToCanvas = regl({
     vert: passThroughVert,
     frag: `
         precision highp float;
@@ -107,7 +125,6 @@ const upSample = regl({
         uniform vec2 offset;
         uniform vec2 repeat;
         uniform vec2 screenSize;
-        varying vec2 uv; // ranging from (-1, -1) to (1, 1)
 
         const vec2 pixelOffset = vec2(0.5, 0.5);
 
@@ -140,9 +157,10 @@ const upSample = regl({
     count: 6,
 });
 
+// This generates each of the render steps, to be used in the main animation loop
+// By pausing the execution of this function, we can let the main thread handle events, gc, etc. between steps
+// It also allows us to bail early in case we ran out of time
 function* generateRenderSteps({ cameraDirection, cameraPosition }){
-    const repeat = [3, 3];
-
     const fbo = getSDFFBO();
     fbo.use(() => {
         renderSDF({
@@ -159,7 +177,7 @@ function* generateRenderSteps({ cameraDirection, cameraPosition }){
     // draw 1/4 res SDF FBO to full res FBO
     let currentScreenBuffer = getScreenFBO();
     currentScreenBuffer.use(() => {
-        drawTexture({ texture: fbo });
+        drawToCanvas({ texture: fbo });
     });
 
     const performUpSample = (previousScreenBuffer, offset) => {
@@ -187,17 +205,6 @@ function* generateRenderSteps({ cameraDirection, cameraPosition }){
         return newScreenBuffer;
     }
 
-    const offsets = [
-        [2, 2],
-        [0, 2],
-        [2, 0],
-        [1, 1],
-        [1, 0],
-        [0, 1],
-        [2, 1],
-        [1, 2]
-    ]
-
     for (let offset of offsets) {
         currentScreenBuffer = performUpSample(currentScreenBuffer, offset);
         yield currentScreenBuffer;
@@ -206,10 +213,8 @@ function* generateRenderSteps({ cameraDirection, cameraPosition }){
     return currentScreenBuffer;
 };
 
-// This controls the FPS (not in an extremely precise way, but good enough)
-// 60fps + 2ms timeslot for drawing to canvasx
-const threshold = 1000 / 60 - 2;
-
+// This essentially checks if the state has changed by doing a deep equals
+// If there are changes, it returns a new object so in other places, we can just check if the references are the same
 const getCurrentState = (() => {
     let current;
     return () => {
@@ -226,6 +231,8 @@ const getCurrentState = (() => {
     }
 })();
 
+// In order to check if the state has changes, we poll the player controls every frame.
+// TODO: refactor this to a more functional approach
 function pollForChanges(callbackIfChanges) {
     const currentState = getCurrentState();
     (function checkForChanges() {
@@ -241,11 +248,13 @@ function pollForChanges(callbackIfChanges) {
 function onEnterFrame(state) {
     const start = performance.now();
     const render = generateRenderSteps(state);
+    let i = 0;
     (function step() {
         const { value: fbo, done } = render.next();
+        i++;
 
         if (done) {
-            drawTexture({
+            drawToCanvas({
                 texture: fbo
             });
             pollForChanges(onEnterFrame);
@@ -256,8 +265,9 @@ function onEnterFrame(state) {
         const newState = getCurrentState();
         const stateHasChanges = newState !== state;
         if (stateHasChanges && now - start > threshold) {
+            // console.log(i); // amount of render steps completed
             // out of time, draw to screen
-            drawTexture({
+            drawToCanvas({
                 texture: fbo
             });
             requestAnimationFrame(() => onEnterFrame(newState));
@@ -274,12 +284,12 @@ onEnterFrame(getCurrentState());
 // reinit FBO factories on window resize so the textures get resized appropriately
 window.addEventListener('resize', () => {
     getSDFFBO = createPingPongBuffers({
-        width: Math.round(window.innerWidth / 2),
-        height: Math.round(window.innerHeight / 2)
+        width: Math.round(window.innerWidth / repeat[0]),
+        height: Math.round(window.innerHeight / repeat[1]),
     });
     
     getScreenFBO = createPingPongBuffers({
         width: Math.round(window.innerWidth),
-        height: Math.round(window.innerHeight)
+        height: Math.round(window.innerHeight),
     });
 });
