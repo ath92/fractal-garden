@@ -1,4 +1,5 @@
 precision highp float;
+precision mediump sampler2D;
 uniform sampler2D sample;
 uniform sampler2D previous;
 uniform vec2 offset;
