@@ -79,6 +79,8 @@ float getIllumination(vec3 collision, int iterations) {
 
 void main() {
     vec3 direction = getRay();
+    gl_FragColor = vec4(offset / (repeat - vec2(1)), 0, 1);
+    return;
 
     float brightness = 0.;
     int iterations;

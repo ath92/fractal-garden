@@ -24,7 +24,9 @@ const offsets = [
     [0, 1],
     [2, 1],
     [1, 2]
-];
+]
+
+console.log(offsets);
 
 // This controls the FPS (not in an extremely precise way, but good enough)
 // 30fps + 4ms timeslot for drawing to canvas and doing other things
