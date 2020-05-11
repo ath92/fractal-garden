@@ -7,18 +7,18 @@ uniform vec2 screenSize;
 
 const vec2 pixelOffset = vec2(0.5, 0.5);
 
-float getMixFactor () {
-    vec2 position = gl_FragCoord.xy - pixelOffset;
+float getMixFactor (vec2 position) {
     vec2 rest = mod(position, repeat);
     vec2 diff = abs(rest - offset);
     return 1. - min(max(diff.x, diff.y), 1.);
 }
 
 void main () {
-    vec2 pixel = gl_FragCoord.xy / screenSize;
+    vec2 position = gl_FragCoord.xy - pixelOffset;
+    vec2 pixel = position / screenSize;
 
     vec4 previousColor = texture2D(previous, pixel);
     vec4 newColor = texture2D(sample, pixel);
 
-    gl_FragColor = mix(previousColor, newColor, getMixFactor());
+    gl_FragColor = mix(previousColor, newColor, getMixFactor(position));
 }

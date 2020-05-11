@@ -4,13 +4,14 @@ import passThroughVert from './pass-through-vert.glsl';
 import upSampleFrag from './upsample.glsl';
 import PlayerControls from './player-controls';
 import { mat4, vec3 } from 'gl-matrix';
+import 'setimmediate';
 
 const playerControls = new PlayerControls();
 
 // The render function is divided into 9 steps;
 // In each step 1/9th (1/3rd horizontal and 1/3 vertical) of all pixels on the screen are rendered
 // If there is not enough time left to maintain a reasonable FPS, the renderer can bail at any time after the first step.
-const repeat = [3, 3];
+const repeat = [2, 2];
 
 // Each render step gets an offset ([0, 0] in the first, mandatory step)
 // This controls what pixels are used to draw each render step
@@ -24,6 +25,7 @@ const offsets = [
     [2, 1],
     [1, 2]
 ];
+
 // This controls the FPS (not in an extremely precise way, but good enough)
 // 30fps + 4ms timeslot for drawing to canvas and doing other things
 const threshold = 1000 / 30 - 4;
@@ -229,20 +231,17 @@ function onEnterFrame(state) {
     const render = generateRenderSteps(state);
     let i = 0;
     (function step() {
-        // schedule next step on event queue so events can interupt rendering
-        // do it before actually rendering anything so nay browser-controlled inaccuracies to setTimout are less pronounced
-        const nextStep = setTimeout(step, 0);
-
         const { value: fbo, done } = render.next();
         i++;
 
         if (done) {
+            console.log('here')
             drawToCanvas({
                 texture: fbo
             });
             pollForChanges(onEnterFrame);
-            clearTimeout(nextStep);
-        }
+            return;
+        }   
 
         const now = performance.now();
         const newState = getCurrentState();
@@ -254,8 +253,9 @@ function onEnterFrame(state) {
                 texture: fbo
             });
             requestAnimationFrame(() => onEnterFrame(newState));
-            clearTimeout(nextStep);
+            return;
         }
+        setImmediate(step, 0);
     })();
 }
 
@@ -272,4 +272,5 @@ window.addEventListener('resize', () => {
         width: Math.round(window.innerWidth),
         height: Math.round(window.innerHeight),
     });
+    onEnterFrame(getCurrentState());
 });
