@@ -1,5 +1,5 @@
 import Regl from 'regl';
-import frag from './frag.glsl';
+import frag from './mandelbulb.glsl';
 import passThroughVert from './pass-through-vert.glsl';
 import upSampleFrag from './upsample.glsl';
 import PlayerControls from './player-controls';
