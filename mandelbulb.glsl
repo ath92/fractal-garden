@@ -5,9 +5,10 @@ uniform vec2 repeat;
 uniform float time;
 uniform vec3 cameraPosition;
 uniform mat4 cameraDirection;
+// uniform bool onlyDistance;
 
-const int MAX_ITER = 80;
-const float HIT_THRESHOLD = 0.00001;
+const int MAX_ITER = 100;
+const float HIT_THRESHOLD = 0.0002;
 const float variance = 0.01;
 // const float PI = 3.14159265359;
 
@@ -54,11 +55,14 @@ float doModel(vec3 p) {
 // this is kinda contrived and does a bunch of stuff I'm not using right now, but I'll leave it like this for now
 vec3 trace(vec3 origin, vec3 direction, out int iterations) {
     vec3 position = origin;
+    float distanceTraveled = 0.;
     for(int i = 0; i < MAX_ITER; i++) {
         iterations = i;
         float d = doModel(position);
-        if (d < HIT_THRESHOLD) break;
+        if (d < HIT_THRESHOLD * distanceTraveled) break;
         position += d * direction;
+        // if (onlyDistance) break;
+        distanceTraveled += d;
     }
     return position;
 }
@@ -69,6 +73,14 @@ float getIllumination(vec3 collision, int iterations) {
 }
 
 // const float col = 0.05; // amount of coloring
+
+vec3 getColor(float t) {
+    vec3 a = vec3(0.5, 0.5, 0.5);
+    vec3 b = vec3(0.5, 0.5, 0.3);
+    vec3 c = vec3(0.5, 0.5, 0.5);
+    vec3 d = vec3(0.05, 0.1, 0.15);
+    return a + b * cos(6.29 * (c * t + d));
+}
 
 void main() {
     vec3 direction = getRay();
@@ -81,10 +93,12 @@ void main() {
     if (iterations < MAX_ITER - 1) { // actual collision
         brightness = getIllumination(collision, iterations);
     }
+    // if (onlyDistance) {
+    //     gl_FragColor = vec4(collision, 1.);
+    //     return;
+    // }
     gl_FragColor = vec4(
-        brightness,
-        brightness,
-        brightness,
+        getColor(float(iterations) / float(MAX_ITER)),
         1.
     );
 }
