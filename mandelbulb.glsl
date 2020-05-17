@@ -6,7 +6,7 @@ uniform float time;
 uniform vec3 cameraPosition;
 uniform mat4 cameraDirection;
 
-const int MAX_ITER = 100;
+const int MAX_ITER = 80;
 const float HIT_THRESHOLD = 0.00001;
 const float variance = 0.01;
 // const float PI = 3.14159265359;
@@ -26,19 +26,19 @@ vec3 opRepeat(vec3 p, vec3 distance) {
 }
 
 float doModel(vec3 p) {
-    float Power = 6.0;
-    vec3 pos = opRepeat(p, vec3(2.5));
+    float Power = 12.0;
+    vec3 pos = opRepeat(p - vec3(0,0,4.), vec3(2.5));
 	vec3 z = pos;
 	float dr = 1.0;
 	float r = 0.0;
-	for (int i = 0; i < MAX_ITER ; i++) {
+	for (int i = 0; i < 10; i++) {
 		r = length(z);
-		if (r > 12.) break;
+		if (r > 4.) break;
 		
 		// convert to polar coordinates
 		float theta = acos(z.z / r);
 		float phi = atan(z.y, z.x);
-		dr =  pow(r, Power - 1.1) * Power * dr + 1.0;
+		dr =  pow(r, Power - 1.) * Power * dr + 1.0;
 		
 		// scale and rotate the point
 		float zr = pow(r, Power);
@@ -47,7 +47,7 @@ float doModel(vec3 p) {
 		
 		// convert back to cartesian coordinates
 		z = zr * vec3(sin(theta) * cos(phi), sin(phi) * sin(theta), cos(theta));
-		z -= pos;
+		z += pos;
 	}
 	return 0.5 * log(r) * r / dr;
 }

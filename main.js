@@ -237,10 +237,7 @@ function onEnterFrame(state) {
         i++;
 
         if (done) {
-            console.log('here')
-            drawToCanvas({
-                texture: fbo
-            });
+            drawToCanvas({ texture: fbo });
             pollForChanges(onEnterFrame);
             return;
         }   
@@ -248,14 +245,14 @@ function onEnterFrame(state) {
         const now = performance.now();
         const newState = getCurrentState();
         const stateHasChanges = newState !== state;
-        if (stateHasChanges && now - start > threshold) {
-            // console.log(i); // amount of render steps completed
+        if (now - start > threshold) {
             // out of time, draw to screen
-            drawToCanvas({
-                texture: fbo
-            });
-            requestAnimationFrame(() => onEnterFrame(newState));
-            return;
+            drawToCanvas({ texture: fbo });
+            if (stateHasChanges) {
+                // console.log(i); // amount of render steps completed
+                requestAnimationFrame(() => onEnterFrame(newState));
+                return;
+            }
         }
         setImmediate(step, 0);
     })();
