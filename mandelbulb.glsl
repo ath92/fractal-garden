@@ -5,9 +5,9 @@ uniform vec2 repeat;
 uniform float time;
 uniform vec3 cameraPosition;
 uniform mat4 cameraDirection;
-// uniform bool onlyDistance;
+uniform bool onlyDistance;
 
-const int MAX_ITER = 100;
+const int MAX_ITER = 120;
 const float HIT_THRESHOLD = 0.0002;
 const float variance = 0.01;
 // const float PI = 3.14159265359;
@@ -28,7 +28,7 @@ vec3 opRepeat(vec3 p, vec3 distance) {
 
 float doModel(vec3 p) {
     float Power = 12.0;
-    vec3 pos = opRepeat(p - vec3(0,0,4.), vec3(2.5));
+    vec3 pos = opRepeat(p, vec3(2.5));
 	vec3 z = pos;
 	float dr = 1.0;
 	float r = 0.0;
@@ -61,7 +61,6 @@ vec3 trace(vec3 origin, vec3 direction, out int iterations) {
         float d = doModel(position);
         if (d < HIT_THRESHOLD * distanceTraveled) break;
         position += d * direction;
-        // if (onlyDistance) break;
         distanceTraveled += d;
     }
     return position;
@@ -87,16 +86,11 @@ void main() {
     // gl_FragColor = vec4(offset / (repeat - vec2(1)), 0, 1);
     // return;
 
-    float brightness = 0.;
+    // gl_FragColor = vec4(opRepeat(cameraPosition, vec3(2.5)), 1);
+    // return;
+
     int iterations;
     vec3 collision = trace(cameraPosition, direction, iterations);
-    if (iterations < MAX_ITER - 1) { // actual collision
-        brightness = getIllumination(collision, iterations);
-    }
-    // if (onlyDistance) {
-    //     gl_FragColor = vec4(collision, 1.);
-    //     return;
-    // }
     gl_FragColor = vec4(
         getColor(float(iterations) / float(MAX_ITER)),
         1.

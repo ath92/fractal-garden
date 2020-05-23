@@ -24,9 +24,7 @@ const offsets = [
     [0, 1],
     [2, 1],
     [1, 2]
-]
-
-console.log(offsets);
+];
 
 // This controls the FPS (not in an extremely precise way, but good enough)
 // 30fps + 4ms timeslot for drawing to canvas and doing other things
@@ -95,7 +93,7 @@ const renderSDF = regl({
         cameraDirection: regl.prop('cameraDirection'),
         offset: regl.prop('offset'),
         repeat: regl.prop('repeat'),
-        // onlyDistance: regl.prop('onlyDistance'),
+        onlyDistance: regl.prop('onlyDistance'),
     },
     attributes: {
         position
@@ -141,25 +139,6 @@ const upSample = regl({
     count: 6,
 });
 
-let distanceTexture = regl.texture({
-    width: 1,
-    height: 1
-});
-// const distanceFBO = regl.framebuffer({ color: distanceTexture });
-// const getCurrentDistance = ({ cameraPosition, cameraDirection }) => {
-//     distanceFBO.use(() => {
-//         renderSDF({
-//             screenSize: [1, 1],
-//             cameraPosition,
-//             cameraDirection,
-//             offset: [0,0],
-//             repeat: [1,1],
-//             onlyDistance: true,
-//         })
-//     });
-//     // GET COLOR
-// }
-
 // This generates each of the render steps, to be used in the main animation loop
 // By pausing the execution of this function, we can let the main thread handle events, gc, etc. between steps
 // It also allows us to bail early in case we ran out of time
@@ -172,6 +151,7 @@ function* generateRenderSteps({ cameraDirection, cameraPosition }){
             cameraPosition,
             offset: [0,0],
             repeat,
+            onlyDistance: false,
         });
     });
 
@@ -192,6 +172,7 @@ function* generateRenderSteps({ cameraDirection, cameraPosition }){
                 cameraPosition,
                 offset,
                 repeat,
+                onlyDistance: false,
             });
         });
 
@@ -269,7 +250,7 @@ function onEnterFrame(state) {
             // out of time, draw to screen
             drawToCanvas({ texture: fbo });
             if (stateHasChanges) {
-                console.log(i); // amount of render steps completed
+                // console.log(i); // amount of render steps completed
                 requestAnimationFrame(() => onEnterFrame(newState));
                 return;
             }

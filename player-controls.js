@@ -1,9 +1,12 @@
 import { vec3, mat4, quat } from 'gl-matrix';
+import getCurrentDistance from './get-speed';
 
 const forward = vec3.fromValues(0, 0, 1);
 const backward = vec3.fromValues(0, 0, -1);
 const left = vec3.fromValues(-1, 0, 0);
 const right = vec3.fromValues(1, 0, 0);
+
+const minSpeed = 0.0005;
 
 function getTouchEventCoordinates(touchEvent) {
     const lastTouch = touchEvent.touches[touchEvent.touches.length - 1];
@@ -14,12 +17,12 @@ function getTouchEventCoordinates(touchEvent) {
 }
 
 export default class PlayerControls {
-    constructor(speed = 0.015, mouseSensitivity = 0.15, touchSensitivity = 0.012) {
+    constructor(speed = 0.020, mouseSensitivity = 0.15, touchSensitivity = 0.012) {
         // TODO: cleanup event listeners
         this.speed = speed;
         this.mouseSensitivity = mouseSensitivity;
         this.touchSensitivity = touchSensitivity;
-        this.position = vec3.fromValues(0, 0, -5);
+        this.position = vec3.fromValues(0, 0, -9);
         this.direction = quat.create();
         this.hasPointerLock = false;
         this.mouseX = 0;
@@ -34,24 +37,25 @@ export default class PlayerControls {
             left: false,
             right: false,
         };
+        this.sprintMode = false;
         this.isTouching = false;
 
         this.onPointerLock = () => {};
 
         this.handleKeyboardEvent = keyboardEvent => {
-            const { code, type } = keyboardEvent;
+            const { code, type, shiftKey } = keyboardEvent;
             const value = type === 'keydown';
             if (code === 'KeyW' || code === 'ArrowUp') this.directionKeys.forward = value;
             if (code === 'KeyS' || code === 'ArrowDown') this.directionKeys.backward = value;
             if (code === 'KeyA' || code === 'ArrowLeft') this.directionKeys.left = value;
             if (code === 'KeyD' || code === 'ArrowRight') this.directionKeys.right = value;
+            this.sprintMode = shiftKey;
         };
 
         document.addEventListener('keydown', this.handleKeyboardEvent);
         document.addEventListener('keyup', this.handleKeyboardEvent);
 
         document.addEventListener('mousedown', e => {
-            console.log(e.target)
             if (e.target.tagName === 'A') {
                 return;
             }
@@ -120,7 +124,11 @@ export default class PlayerControls {
         if (this.directionKeys.left) vec3.add(diff, diff, left);
         if (this.directionKeys.right) vec3.add(diff, diff, right);
         vec3.normalize(diff, diff);
-        vec3.scale(diff, diff, this.speed);
+
+        const currentDistance = getCurrentDistance(this.position);
+        let speedLimit = this.speed * Math.max(currentDistance, minSpeed) ** 0.5;
+        if (this.sprintMode) speedLimit = speedLimit ** 0.8;
+        vec3.scale(diff, diff, speedLimit);
         vec3.transformQuat(diff, diff, this.direction);
         vec3.add(this.position, this.position, diff);
     
