@@ -214,9 +214,12 @@ const getCurrentState = (() => {
 
 // In order to check if the state has changes, we poll the player controls every frame.
 // TODO: refactor this to a more functional approach
-function pollForChanges(callbackIfChanges) {
+function pollForChanges(callbackIfChanges, lastFBO) {
     const currentState = getCurrentState();
     (function checkForChanges() {
+        // TODO: not sure why it is necessary to re-draw the last fbo here.
+        // Sometimes the last FBO is not drawn in the render step.
+        drawToCanvas({ texture: lastFBO });
         const newState = getCurrentState();
         if (newState !== currentState) {
             callbackIfChanges(newState);
@@ -236,7 +239,7 @@ function onEnterFrame(state) {
 
         if (done) {
             drawToCanvas({ texture: fbo });
-            pollForChanges(onEnterFrame);
+            pollForChanges(onEnterFrame, fbo);
             return;
         }   
 
