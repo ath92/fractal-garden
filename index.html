@@ -3,6 +3,13 @@
     <head>
         <title>Fractal garden</title>
         <style type="text/css">
+            html, body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+            }
+            
             body.has-pointer-lock .message {
                 display: none;
             }
@@ -28,6 +35,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body>
+        <div class="container"></div>
         <div style="position: fixed; top: 50%; left: 50%; width: 1px; height: 1px; background: red; z-index:1000"></div>
         <div class="message">
             <div class="text">
