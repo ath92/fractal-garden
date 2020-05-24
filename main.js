@@ -11,7 +11,7 @@ const playerControls = new PlayerControls();
 // The render function is divided into 9 steps;
 // In each step 1/9th (1/3rd horizontal and 1/3 vertical) of all pixels on the screen are rendered
 // If there is not enough time left to maintain a reasonable FPS, the renderer can bail at any time after the first step.
-const repeat = [2, 2];
+const repeat = [3, 3];
 
 // Each render step gets an offset ([0, 0] in the first, mandatory step)
 // This controls what pixels are used to draw each render step
@@ -30,12 +30,9 @@ const offsets = [
 // 30fps + 4ms timeslot for drawing to canvas and doing other things
 const threshold = 1000 / 30 - 4;
 
-playerControls.onPointerLock = val => {
-    const message = document.querySelector('.message');
-    if (val && message) {
-        message.remove();
-    }
-}
+playerControls.onPointerLock = () => {
+    document.body.classList.toggle('has-pointer-lock');
+};
 
 const regl = Regl({}); // no params = full screen canvas
 

@@ -74,10 +74,10 @@ float getIllumination(vec3 collision, int iterations) {
 // const float col = 0.05; // amount of coloring
 
 vec3 getColor(float t) {
-    vec3 a = vec3(0.5, 0.5, 0.5);
-    vec3 b = vec3(0.5, 0.5, 0.3);
-    vec3 c = vec3(0.5, 0.5, 0.5);
-    vec3 d = vec3(0.05, 0.1, 0.15);
+    vec3 a = vec3(0.5);
+    vec3 b = vec3(0.5);
+    vec3 c = vec3(0.5, 0.5, 0.45);
+    vec3 d = vec3(0.03, 0.0, 0.0);
     return a + b * cos(6.29 * (c * t + d));
 }
 

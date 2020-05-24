@@ -17,7 +17,7 @@ function getTouchEventCoordinates(touchEvent) {
 }
 
 export default class PlayerControls {
-    constructor(speed = 0.020, mouseSensitivity = 0.15, touchSensitivity = 0.012) {
+    constructor(speed = 0.012, mouseSensitivity = 0.15, touchSensitivity = 0.012) {
         // TODO: cleanup event listeners
         this.speed = speed;
         this.mouseSensitivity = mouseSensitivity;
