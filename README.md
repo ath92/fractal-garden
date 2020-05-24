@@ -1,11 +1,9 @@
 # Raymarching fractals using regl
 
-[demo](http://regl-raymarching.netlify.com)
+[demo](https://fractal.garden)
 
-This is an experiment around raymarched 3d fractals, as popularized by [Inigo Quilez](https://www.iquilezles.org/). I'm using regl as an abstraction on top of webgl, which makes things a lot simpler.
+This is an experiment around raymarched 3d fractals. The goal was to allow users to explore these fractals in realtime at a decent framerate.
 
-To get started, all we need to do is to create a regl function, which will create a 'scene' for us, with nothing more than two triangles, each of which fill half the screen. The vertex shader is very simple (just a pass-through really). All the magic happens in the fragment shader (i.e. the actual rendering of the fractals).
+To read more about how to generate these fractals using shaders/webgl, check out the articles written by [Inigo Quilez](https://www.iquilezles.org/). In short, we draw two triangles that fill the entire window. After that, we can use a fragment shader to draw the fractal. This is run separately for each pixel, which means we can exploit the GPU to heavily parallelize things. That said, things get more expensive with a larger resolution, so achieving a reasonable framerate at full screen is not trivial.
 
-Rendering is broken up into steps. Each step renders the scene at a fraction of the final resolution. After each step, the new image and what had already been rendered is combined to produce a higher fidelity image. This is repeated until there is no more time left within an animation frame, or until the scene has been rendered on full resolution.
-
-I also added a rather simple player controls class that allows the user to move through the scene using mouse/keyboard and/or touch controls.
+To get a somewhat better framerate, rendering is broken up into steps. Each step renders the scene at a fraction (e.g. 1/9th) of the final resolution. After each step, the new image and what had already been rendered is combined to produce a higher fidelity image. This is repeated until there is no more time left within a frame, or until the scene has been rendered on full resolution.
