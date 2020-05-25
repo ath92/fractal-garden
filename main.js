@@ -8,7 +8,19 @@ import 'setimmediate';
 
 const playerControls = new PlayerControls();
 
-function init(count) {
+const getRenderSettings = () => {
+    // On small screens, we do less upsampling, to reduce the amount of overhead introduced
+    if (window.innerWidth <= 800) {
+        return {
+            repeat: [2, 2],
+            offsets: [
+                [1, 1],
+                [0, 1],
+                [1, 0]
+            ]
+        };
+    }
+    // For larger screens
     // The render function is divided into 9 steps;
     // In each step 1/9th (1/3rd horizontal and 1/3 vertical) of all pixels on the screen are rendered
     // If there is not enough time left to maintain a reasonable FPS, the renderer can bail at any time after the first step.
@@ -26,6 +38,12 @@ function init(count) {
         [2, 1],
         [1, 2]
     ];
+
+    return { repeat, offsets };
+}
+
+function init(count) {
+    const { repeat, offsets } = getRenderSettings();
     
     // This controls the FPS (not in an extremely precise way, but good enough)
     // 30fps + 4ms timeslot for drawing to canvas and doing other things
