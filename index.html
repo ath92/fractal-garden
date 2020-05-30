@@ -24,6 +24,7 @@
                 line-height: 1.6em;
                 text-align: center;
                 top: 0;
+                pointer-events: none;
             }
 
             .message .text {
@@ -31,6 +32,11 @@
                 text-shadow: 2px 2px 2px black;
                 font-family: sans-serif;
                 font-size: 20px;
+                pointer-events: all;
+            }
+
+            .dg.ac {
+                z-index: 10!important; /* dat.gui */
             }
         </style>
         <meta name="viewport" content="width=device-width, initial-scale=1">

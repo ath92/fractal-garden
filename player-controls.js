@@ -24,7 +24,7 @@ export default class PlayerControls {
         this.touchSensitivity = touchSensitivity;
         this.position = vec3.fromValues(0, 0, -9);
         this.direction = quat.create();
-        this.hasPointerLock = false;
+        this.isPanning = false;
         this.mouseX = 0;
         this.mouseY = 0;
         this.touchX = 0;
@@ -55,20 +55,33 @@ export default class PlayerControls {
         document.addEventListener('keydown', this.handleKeyboardEvent);
         document.addEventListener('keyup', this.handleKeyboardEvent);
 
-        document.addEventListener('mousedown', e => {
-            if (e.target.tagName === 'A') {
+        document.addEventListener('mousedown', (e) => {
+            if (e.target.tagName !== 'CANVAS') {
                 return;
             }
-            document.querySelector('body').requestPointerLock();
+            this.isPanning = true;
+            const requestPointerLock = () => {
+                if (e.target.tagName !== 'CANVAS') {
+                    return;
+                }
+                document.querySelector('body').requestPointerLock();
+            }
+            document.addEventListener('mouseup', requestPointerLock);
+            setTimeout(() => document.removeEventListener('mouseup', requestPointerLock), 300);
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            this.isPanning = false;
         });
 
         document.addEventListener('pointerlockchange', () => {
-            this.hasPointerLock = !!document.pointerLockElement;
-            this.onPointerLock(this.hasPointerLock);
+            this.isPanning = !!document.pointerLockElement;
+            this.onPointerLock(this.isPanning);
         }, false);
 
         document.addEventListener('mousemove', e => {
-            if (!this.hasPointerLock) return;
+            if (!this.isPanning) return;
+            this.hasMovedSinceMousedown = true;
             this.mouseX += e.movementX * this.mouseSensitivity;
             this.mouseY += e.movementY * this.mouseSensitivity;
         });

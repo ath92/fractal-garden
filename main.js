@@ -2,11 +2,11 @@ import Regl from 'regl';
 import frag from './mandelbulb.glsl';
 import passThroughVert from './pass-through-vert.glsl';
 import upSampleFrag from './upsample.glsl';
-import PlayerControls from './player-controls';
+import Controller from './controller';
 import { mat4, vec3 } from 'gl-matrix';
 import 'setimmediate';
 
-const playerControls = new PlayerControls();
+const controller = new Controller();
 
 const getRenderSettings = () => {
     // On small screens, we do less upsampling, to reduce the amount of overhead introduced
@@ -42,14 +42,14 @@ const getRenderSettings = () => {
     return { repeat, offsets };
 }
 
-function init(count) {
+function init() {
     const { repeat, offsets } = getRenderSettings();
     
     // This controls the FPS (not in an extremely precise way, but good enough)
     // 30fps + 4ms timeslot for drawing to canvas and doing other things
     const threshold = 1000 / 30 - 4;
     
-    playerControls.onPointerLock = () => {
+    controller.playerControls.onPointerLock = () => {
         document.body.classList.toggle('has-pointer-lock');
     };
     
@@ -121,7 +121,10 @@ function init(count) {
             cameraDirection: regl.prop('cameraDirection'),
             offset: regl.prop('offset'),
             repeat: regl.prop('repeat'),
-            onlyDistance: regl.prop('onlyDistance'),
+            hitThreshold: regl.prop('hitThreshold'),
+            power: regl.prop('power'),
+            maxIterations: regl.prop('maxIterations'),
+            mandelbulbIterations: regl.prop('mandelbulbIterations'),
         },
         attributes: {
             position
@@ -170,16 +173,15 @@ function init(count) {
     // This generates each of the render steps, to be used in the main animation loop
     // By pausing the execution of this function, we can let the main thread handle events, gc, etc. between steps
     // It also allows us to bail early in case we ran out of time
-    function* generateRenderSteps({ cameraDirection, cameraPosition }){
+    function* generateRenderSteps(renderState){
+        console.log(renderState)
         const fbo = getSDFFBO();
         fbo.use(() => {
             renderSDF({
                 screenSize: [width / repeat[0], height / repeat[1]],
-                cameraDirection,
-                cameraPosition,
                 offset: [0,0],
                 repeat,
-                onlyDistance: false,
+                ...renderState
             });
         });
     
@@ -196,11 +198,9 @@ function init(count) {
             newSampleFBO.use(() => {
                 renderSDF({
                     screenSize: [width / repeat[0], height / repeat[1]],
-                    cameraDirection,
-                    cameraPosition,
                     offset,
                     repeat,
-                    onlyDistance: false,
+                    ...renderState
                 });
             });
     
@@ -230,13 +230,8 @@ function init(count) {
     const getCurrentState = (() => {
         let current;
         return () => {
-            const newState = {
-                cameraDirection: playerControls.directionMatrix,
-                cameraPosition: vec3.copy(vec3.create(), playerControls.position),
-            };
-            if (!current
-                || !mat4.equals(current.cameraDirection, newState.cameraDirection)
-                || !vec3.equals(current.cameraPosition, newState.cameraPosition)) {
+            const newState = controller.state;
+            if (JSON.stringify(current) !== JSON.stringify(newState)) {
                 current = newState;
             }
             return current; 
@@ -263,7 +258,6 @@ function init(count) {
     let stop = false;
     
     function onEnterFrame(state) {
-        console.log(count);
         const start = performance.now();
         const render = generateRenderSteps(state);
         let i = 0;
@@ -302,11 +296,9 @@ function init(count) {
     }
 }
 
-let stopCurrentLoop = init(0);
-let count = 1;
+let stopCurrentLoop = init();
 // reinit on resize
 window.addEventListener('resize', () => {
     stopCurrentLoop();
-    stopCurrentLoop = init(count);
-    count++;
+    stopCurrentLoop = init();
 });

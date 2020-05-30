@@ -7,8 +7,12 @@ uniform vec3 cameraPosition;
 uniform mat4 cameraDirection;
 uniform bool onlyDistance;
 
-const int MAX_ITER = 120;
-const float HIT_THRESHOLD = 0.0002;
+uniform float hitThreshold;
+uniform float power;
+uniform int maxIterations;
+uniform int mandelbulbIterations;
+
+const int MAX_ITER = 300;
 const float variance = 0.01;
 // const float PI = 3.14159265359;
 
@@ -27,24 +31,23 @@ vec3 opRepeat(vec3 p, vec3 distance) {
 }
 
 float doModel(vec3 p) {
-    float Power = 12.0;
     vec3 pos = opRepeat(p, vec3(2.5));
 	vec3 z = pos;
 	float dr = 1.0;
 	float r = 0.0;
 	for (int i = 0; i < 10; i++) {
 		r = length(z);
-		if (r > 4.) break;
+		if (r > 4. || i > mandelbulbIterations) break;
 		
 		// convert to polar coordinates
 		float theta = acos(z.z / r);
 		float phi = atan(z.y, z.x);
-		dr =  pow(r, Power - 1.) * Power * dr + 1.0;
+		dr =  pow(r, power - 1.) * power * dr + 1.5;
 		
 		// scale and rotate the point
-		float zr = pow(r, Power);
-		theta = theta * Power;
-		phi = phi * Power;
+		float zr = pow(r, power);
+		theta = theta * power;
+		phi = phi * power;
 		
 		// convert back to cartesian coordinates
 		z = zr * vec3(sin(theta) * cos(phi), sin(phi) * sin(theta), cos(theta));
@@ -59,7 +62,7 @@ vec3 trace(vec3 origin, vec3 direction, out int iterations) {
     for(int i = 0; i < MAX_ITER; i++) {
         iterations = i;
         float d = doModel(position);
-        if (d < HIT_THRESHOLD * distanceTraveled) break;
+        if (d < hitThreshold * distanceTraveled || i > maxIterations) break;
         position += d * direction;
         distanceTraveled += d;
     }
@@ -67,7 +70,7 @@ vec3 trace(vec3 origin, vec3 direction, out int iterations) {
 }
 
 float getIllumination(vec3 collision, int iterations) {
-    float occlusionLight = 1. - float(iterations) / float(MAX_ITER);
+    float occlusionLight = 1. - float(iterations) / float(maxIterations);
     return occlusionLight;
 }
 
@@ -92,7 +95,7 @@ void main() {
     int iterations;
     vec3 collision = trace(cameraPosition, direction, iterations);
     gl_FragColor = vec4(
-        getColor(float(iterations) / float(MAX_ITER)),
+        getColor(float(iterations) / float(maxIterations)),
         1.
     );
 }
