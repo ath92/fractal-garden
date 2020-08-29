@@ -21,22 +21,51 @@ const getRenderSettings = () => {
         };
     }
     // For larger screens
-    // The render function is divided into 9 steps;
-    // In each step 1/9th (1/3rd horizontal and 1/3 vertical) of all pixels on the screen are rendered
+    // The render function is divided into a certain number of steps. This is done horizontally and vertically;
+    // In each step 1/(x*y)th (1/x horizontal and 1/y vertical) of all pixels on the screen are rendered
     // If there is not enough time left to maintain a reasonable FPS, the renderer can bail at any time after the first step.
-    const repeat = [3, 3];
+    // const repeat = [1, 1];
+    // const offsets = [];
+
+    // const repeat = [2, 2];
+    // const offsets = [
+    //     [1, 1],
+    //     [0, 1],
+    //     [1, 0]
+    // ];
     
     // Each render step gets an offset ([0, 0] in the first, mandatory step)
     // This controls what pixels are used to draw each render step
+    // const repeat = [3, 3];
+    // const offsets = [
+    //     [2, 2],
+    //     [0, 2],
+    //     [2, 0],
+    //     [1, 1],
+    //     [1, 0],
+    //     [0, 1],
+    //     [2, 1],
+    //     [1, 2]
+    // ];
+
+
+    const repeat = [4, 4];
     const offsets = [
         [2, 2],
+        [3, 0],
+        [0, 3],
+        [1, 1],
+        [3, 3],
+        [2, 1],
+        [1, 2],
+        [1, 0],
+        [3, 1],
+        [2, 3],
         [0, 2],
         [2, 0],
-        [1, 1],
-        [1, 0],
-        [0, 1],
-        [2, 1],
-        [1, 2]
+        [3, 2],
+        [1, 3],
+        [0, 1]
     ];
 
     return { repeat, offsets };
@@ -47,7 +76,7 @@ function init() {
     
     // This controls the FPS (not in an extremely precise way, but good enough)
     // 30fps + 4ms timeslot for drawing to canvas and doing other things
-    const threshold = 1000 / 30 - 4;
+    const threshold = 1000 / 60 - 4;
     
     controller.playerControls.onPointerLock = () => {
         document.body.classList.toggle('has-pointer-lock');
@@ -174,7 +203,6 @@ function init() {
     // By pausing the execution of this function, we can let the main thread handle events, gc, etc. between steps
     // It also allows us to bail early in case we ran out of time
     function* generateRenderSteps(renderState){
-        console.log(renderState)
         const fbo = getSDFFBO();
         fbo.use(() => {
             renderSDF({

@@ -2,11 +2,12 @@ precision highp float;
 uniform vec2 screenSize;
 uniform vec2 offset;
 uniform vec2 repeat;
+uniform float time;
 uniform vec3 cameraPosition;
 uniform mat4 cameraDirection;
 
-const int MAX_ITER = 128;
-const float HIT_THRESHOLD = 0.0001;
+const int MAX_ITER = 40;
+const float HIT_THRESHOLD = 0.000001;
 const float variance = 0.01;
 // const float PI = 3.14159265359;
 
@@ -20,39 +21,45 @@ vec3 getRay() {
     return (cameraDirection * normalize(vec4(pixel.x, pixel.y, 1, 0))).xyz;
 }
 
-float makeHoles(vec3 p, float h) {
-  p = min(abs(p) - h, 0.);
-  return max(max(-max(p.z, p.y), -max(p.x, p.z)), -max(p.x, p.y));
+float sphere(vec3 p, float radius) {
+    return length(p) - radius;
 }
 
-float box(vec3 p, float b) {
-    p = abs(p) - b;
-    return length(max(p, 0.0)) + min(max(p.x, max(p.y, p.z)),  0.0);
+float hollowSphere(vec3 p, float radius, float thickness) {
+    float outer = sphere(p, radius);
+    float inner = sphere(p, radius - thickness);
+    // inner will be bigger outside itself
+    // and bigger inside itself
+    // we only want to use it when it's smaller than zero
+    float combined = max(outer, -inner);
+    return combined;
 }
 
-vec3 opRepeat(vec3 p, vec3 distance) {
-    return mod(p + 0.5 * distance, distance) - 0.5 * distance;
+float box(vec3 p, vec3 box) {
+  vec3 q = abs(p) - box;
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
-const int MENGER_ITERATIONS = 6;
-float menger(vec3 p, float b, float h) {
-    float box = box(p, b);
-    float holes = makeHoles(p, h);
-    float scale = h;
-    for (int i = 0; i < MENGER_ITERATIONS; i++) {
-        p = p + vec3(-2. * scale, -2. * scale, -2. * scale);
-        holes = max(holes, makeHoles(opRepeat(p, vec3(2. * scale)), h * scale));
-        scale = scale * h;
-    }
-    return max(box, holes);
+vec3 yRotate(vec3 p, float a) {
+    float cosa = cos(a);
+    float sina = sin(a);
+    return vec3(
+        cosa * p.x + -sina * p.z,
+        p.y,
+        cosa * p.z + sina * p.x
+    );
 }
 
 float doModel(vec3 p) {
-    return menger(
-        opRepeat(p, vec3(5.)),
-        2.,
-        1. / 3. + variance
-    );
+    float distance = 99999.;
+    for (float i = 0.; i < 6.; i++) {
+        vec3 p2 = yRotate(p, i / 3. + 0.5 * cos(time / 1000. + i / 0.1 * i) - 1.5);
+        float r = 3. - i / 2.;
+        float s = hollowSphere(p2, r, 0.2);
+        float b = box(p2 - vec3(0,0,r), vec3(r));
+        distance = min(distance, max(b, s));
+    }
+    return distance;
 }
 // this is kinda contrived and does a bunch of stuff I'm not using right now, but I'll leave it like this for now
 vec3 trace(vec3 origin, vec3 direction, out int iterations) {

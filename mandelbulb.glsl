@@ -31,7 +31,7 @@ vec3 opRepeat(vec3 p, vec3 distance) {
 }
 
 float doModel(vec3 p) {
-    vec3 pos = opRepeat(p, vec3(2.5));
+    vec3 pos = opRepeat(p, vec3(3.5));
 	vec3 z = pos;
 	float dr = 1.0;
 	float r = 0.0;
@@ -79,8 +79,8 @@ float getIllumination(vec3 collision, int iterations) {
 vec3 getColor(float t) {
     vec3 a = vec3(0.5);
     vec3 b = vec3(0.5);
-    vec3 c = vec3(0.5, 0.5, 0.45);
-    vec3 d = vec3(0.03, 0.0, 0.0);
+    vec3 c = vec3(0.5);
+    vec3 d = vec3(0.0, 0.00, 0.0);
     return a + b * cos(6.29 * (c * t + d));
 }
 

@@ -16,11 +16,11 @@ class Controller {
         this.createGUI();
     }
 
-    createGUI = () => {
+    createGUI() {
         const gui = new dat.GUI();
         gui.add(this, 'power', 1, 20);
-        gui.add(this, 'hitThreshold', 0.00001, 0.005);
-        gui.add(this, 'maxIterations', 30, 300);
+        gui.add(this, 'hitThreshold', -1, 1.000);
+        gui.add(this, 'maxIterations', 150, 300);
         gui.add(this, 'mandelbulbIterations', 1, 20);
     }
 

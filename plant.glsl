@@ -2,11 +2,12 @@ precision highp float;
 uniform vec2 screenSize;
 uniform vec2 offset;
 uniform vec2 repeat;
+uniform float time;
 uniform vec3 cameraPosition;
 uniform mat4 cameraDirection;
 
 const int MAX_ITER = 128;
-const float HIT_THRESHOLD = 0.0001;
+const float HIT_THRESHOLD = 0.001;
 const float variance = 0.01;
 // const float PI = 3.14159265359;
 
@@ -20,38 +21,53 @@ vec3 getRay() {
     return (cameraDirection * normalize(vec4(pixel.x, pixel.y, 1, 0))).xyz;
 }
 
-float makeHoles(vec3 p, float h) {
-  p = min(abs(p) - h, 0.);
-  return max(max(-max(p.z, p.y), -max(p.x, p.z)), -max(p.x, p.y));
+vec3 zRotate(vec3 p, float zRotationRads) {
+    float cosTheta = cos(zRotationRads);
+    float sinTheta = sin(zRotationRads);
+    mat3 rotation = mat3(
+        1, 0, 0,
+        0, cosTheta, -sinTheta,
+        0, sinTheta, cosTheta
+    );
+    return rotation * p;
 }
 
-float box(vec3 p, float b) {
-    p = abs(p) - b;
-    return length(max(p, 0.0)) + min(max(p.x, max(p.y, p.z)),  0.0);
+vec3 xMirror(vec3 p) {
+    return vec3(abs(p.x), p.y, p.z);
 }
+
+vec3 yMirror(vec3 p) {
+    return vec3(p.x, abs(p.y), p.z);
+}
+
+vec3 zMirror(vec3 p) {
+    return vec3(p.x, p.y, abs(p.z));
+}
+
 
 vec3 opRepeat(vec3 p, vec3 distance) {
     return mod(p + 0.5 * distance, distance) - 0.5 * distance;
 }
 
-const int MENGER_ITERATIONS = 6;
-float menger(vec3 p, float b, float h) {
-    float box = box(p, b);
-    float holes = makeHoles(p, h);
-    float scale = h;
-    for (int i = 0; i < MENGER_ITERATIONS; i++) {
-        p = p + vec3(-2. * scale, -2. * scale, -2. * scale);
-        holes = max(holes, makeHoles(opRepeat(p, vec3(2. * scale)), h * scale));
-        scale = scale * h;
-    }
-    return max(box, holes);
+float trunk(vec3 p, vec2 xz, float b) {
+    vec3 nearest = vec3(xz.x, p.y, xz.y);
+    return distance(nearest, p) - b;
+}
+
+vec3 curl(vec3 p, float k) {
+    float c = cos(k*p.y);
+    float s = sin(k*p.y);
+    mat2  m = mat2(c,-s,s,c);
+    return vec3(m*p.xz,p.y);
 }
 
 float doModel(vec3 p) {
-    return menger(
-        opRepeat(p, vec3(5.)),
-        2.,
-        1. / 3. + variance
+    vec3 repeated = opRepeat(p, vec3(15., 30., 199.));
+    vec3 transformed = zRotate(zMirror(yMirror(repeated)), 1.);
+    return trunk(
+        curl(p, 0.5),
+        vec2(1., 1.),
+        1.
     );
 }
 // this is kinda contrived and does a bunch of stuff I'm not using right now, but I'll leave it like this for now

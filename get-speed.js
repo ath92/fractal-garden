@@ -26,6 +26,7 @@ function opRepeat(p, distance) {
  * @param {vec3} p 
  */
 const getCurrentDistance = (p) => {
+    return 50;
     const Power = 12.0;
     const pos = opRepeat(p, spaceRepeat);
 	let z = vec3.clone(pos);
