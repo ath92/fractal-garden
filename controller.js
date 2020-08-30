@@ -3,17 +3,20 @@ import PlayerControls from './player-controls';
 class Controller {
     constructor() {
         Object.assign(this, {
-            scroll: 0,
+            scrollY: 0,
+            scrollX: 0,
         });
         this.playerControls = new PlayerControls();
         window.addEventListener("wheel", e => {
-            this.scroll += e.deltaY / 1000;
+            this.scrollY += e.deltaY / 1000;
+            this.scrollX += e.deltaX / 1000;
         });
     }
 
     get state() {
         return {
-            scroll: this.scroll,
+            scrollY: this.scrollY,
+            scrollX: this.scrollX,
             cameraPosition: [...this.playerControls.position],
             cameraDirection: this.playerControls.directionMatrix,
         }

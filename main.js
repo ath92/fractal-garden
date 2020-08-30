@@ -8,7 +8,7 @@ import 'setimmediate';
 
 const controller = new Controller();
 
-const getRenderSettings = () => {
+const getRenderSettings = (perf = 2) => {
     // On small screens, we do less upsampling, to reduce the amount of overhead introduced
     if (window.innerWidth <= 800) {
         return {
@@ -27,48 +27,51 @@ const getRenderSettings = () => {
     // const repeat = [1, 1];
     // const offsets = [];
 
-    // const repeat = [2, 2];
-    // const offsets = [
-    //     [1, 1],
-    //     [0, 1],
-    //     [1, 0]
-    // ];
+    if (perf === 1) return {
+        repeat: [2, 2],
+        offsets: [
+            [1, 1],
+            [0, 1],
+            [1, 0]
+        ],
+    };
     
     // Each render step gets an offset ([0, 0] in the first, mandatory step)
     // This controls what pixels are used to draw each render step
-    // const repeat = [3, 3];
-    // const offsets = [
-    //     [2, 2],
-    //     [0, 2],
-    //     [2, 0],
-    //     [1, 1],
-    //     [1, 0],
-    //     [0, 1],
-    //     [2, 1],
-    //     [1, 2]
-    // ];
+    if (perf === 2) return {
+        repeat: [3, 3],
+        offsets: [
+            [2, 2],
+            [0, 2],
+            [2, 0],
+            [1, 1],
+            [1, 0],
+            [0, 1],
+            [2, 1],
+            [1, 2]
+        ],
+    };
 
-
-    const repeat = [4, 4];
-    const offsets = [
-        [2, 2],
-        [3, 0],
-        [0, 3],
-        [1, 1],
-        [3, 3],
-        [2, 1],
-        [1, 2],
-        [1, 0],
-        [3, 1],
-        [2, 3],
-        [0, 2],
-        [2, 0],
-        [3, 2],
-        [1, 3],
-        [0, 1]
-    ];
-
-    return { repeat, offsets };
+    return {
+        repeat: [4, 4],
+        offsets: [
+            [2, 2],
+            [3, 0],
+            [0, 3],
+            [1, 1],
+            [3, 3],
+            [2, 1],
+            [1, 2],
+            [1, 0],
+            [3, 1],
+            [2, 3],
+            [0, 2],
+            [2, 0],
+            [3, 2],
+            [1, 3],
+            [0, 1]
+        ],
+    }
 }
 
 function init() {
@@ -146,7 +149,8 @@ function init() {
             cameraDirection: regl.prop('cameraDirection'),
             offset: regl.prop('offset'),
             repeat: regl.prop('repeat'),
-            scroll: regl.prop('scroll'),
+            scrollX: regl.prop('scrollX'),
+            scrollY: regl.prop('scrollY'),
         },
         attributes: {
             position
@@ -323,3 +327,7 @@ window.addEventListener('resize', () => {
     stopCurrentLoop();
     stopCurrentLoop = init();
 });
+
+document.addEventLister('keydown', e => {
+    console.log("hallo", e);
+})

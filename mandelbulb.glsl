@@ -6,10 +6,13 @@ uniform float time;
 uniform vec3 cameraPosition;
 uniform mat4 cameraDirection;
 uniform bool onlyDistance;
-uniform float scroll;
+uniform float scrollX;
+uniform float scrollY;
 
 const float hitThreshold = 0.0005;
 const int MAX_ITER = 200;
+
+const vec3 spaceRepetition = vec3(3.5);
 
 vec3 getRay() {
     vec2 normalizedCoords = gl_FragCoord.xy - vec2(0.5) + (offset / repeat);
@@ -25,7 +28,7 @@ vec3 opRepeat(vec3 p, vec3 distance) {
 }
 
 float doModel(vec3 p) {
-    vec3 pos = opRepeat(p, vec3(3.5));
+    vec3 pos = opRepeat(p, spaceRepetition);
 	vec3 z = pos;
 	float dr = 1.0;
 	float r = 0.0;
@@ -36,7 +39,7 @@ float doModel(vec3 p) {
 		// convert to polar coordinates
 		float theta = acos(z.z / r);
 		float phi = atan(z.y, z.x);
-        float power = 12. + sin(scroll) * 10.;
+        float power = 12. + sin(scrollY) * 10.;
 		dr =  pow(r, power - 1.) * power * dr + 1.5;
 		
 		// scale and rotate the point
@@ -54,11 +57,17 @@ float doModel(vec3 p) {
 vec3 trace(vec3 origin, vec3 direction, out int iterations) {
     vec3 position = origin;
     float distanceTraveled = 0.;
+    mat3 scrollXRotate = mat3(
+        1,  sin(scrollX) * 0.05, 0,
+        -sin(scrollX) * 0.05, 1, 0,
+        0,             0,            1
+    );
     for(int i = 0; i < MAX_ITER; i++) {
         iterations = i;
         float d = doModel(position);
         if (d < hitThreshold * distanceTraveled) break;
         position += d * direction;
+        direction = scrollXRotate * direction;
         distanceTraveled += d;
     }
     return position;
@@ -71,12 +80,17 @@ float getIllumination(vec3 collision, int iterations) {
 
 // const float col = 0.05; // amount of coloring
 
-vec3 getColor(float t) {
-    vec3 a = vec3(0.5);
-    vec3 b = vec3(0.5);
-    vec3 c = vec3(1.0);
-    vec3 d = vec3(-0.);
-    return a + b * cos(6.29 * (c * t + d));
+vec3 hsl2rgb( in vec3 c ) {
+    vec3 rgb = clamp( abs(mod(c.x*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0, 0.0, 1.0 );
+    return c.z + c.y * (rgb-0.5)*(1.0-abs(2.0*c.z-1.0));
+}
+
+vec3 getColor(float it, float d) {
+    return hsl2rgb(vec3(
+        d,
+        0.5,
+        1. - pow(it, 0.8)
+    ));
 }
 
 void main() {
@@ -90,7 +104,7 @@ void main() {
     int iterations;
     vec3 collision = trace(cameraPosition, direction, iterations);
     gl_FragColor = vec4(
-        getColor(float(iterations) / float(MAX_ITER)),
+        getColor(float(iterations) / float(MAX_ITER), distance(collision, spaceRepetition / 2.)),
         1.
     );
 }

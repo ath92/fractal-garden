@@ -17,7 +17,7 @@ function getTouchEventCoordinates(touchEvent) {
 }
 
 export default class PlayerControls {
-    constructor(speed = 0.0022, mouseSensitivity = 0.15, touchSensitivity = 0.012) {
+    constructor(speed = 0.0012, mouseSensitivity = 0.15, touchSensitivity = 0.012) {
         // TODO: cleanup event listeners
         this.speed = speed;
         this.mouseSensitivity = mouseSensitivity;
@@ -138,7 +138,8 @@ export default class PlayerControls {
         if (this.directionKeys.right) vec3.add(diff, diff, right);
         vec3.normalize(diff, diff);
 
-        const currentDistance = getCurrentDistance(this.position);
+        // const currentDistance = getCurrentDistance(this.position)
+        const currentDistance = 1;
         let speedLimit = this.speed * Math.max(currentDistance, minSpeed) ** 0.5;
         if (this.sprintMode) speedLimit = speedLimit ** 0.8;
         vec3.scale(diff, diff, speedLimit);
