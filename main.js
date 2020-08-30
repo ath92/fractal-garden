@@ -8,7 +8,9 @@ import 'setimmediate';
 
 const controller = new Controller();
 
-const getRenderSettings = (perf = 2) => {
+let perf = 3;
+const getRenderSettings = () => {
+    console.log(perf);
     // On small screens, we do less upsampling, to reduce the amount of overhead introduced
     if (window.innerWidth <= 800) {
         return {
@@ -24,10 +26,12 @@ const getRenderSettings = (perf = 2) => {
     // The render function is divided into a certain number of steps. This is done horizontally and vertically;
     // In each step 1/(x*y)th (1/x horizontal and 1/y vertical) of all pixels on the screen are rendered
     // If there is not enough time left to maintain a reasonable FPS, the renderer can bail at any time after the first step.
-    // const repeat = [1, 1];
-    // const offsets = [];
-
     if (perf === 1) return {
+        repeat: [1, 1],
+        offsets: [],
+    };
+
+    if (perf === 2) return {
         repeat: [2, 2],
         offsets: [
             [1, 1],
@@ -38,7 +42,7 @@ const getRenderSettings = (perf = 2) => {
     
     // Each render step gets an offset ([0, 0] in the first, mandatory step)
     // This controls what pixels are used to draw each render step
-    if (perf === 2) return {
+    if (perf === 3) return {
         repeat: [3, 3],
         offsets: [
             [2, 2],
@@ -311,13 +315,13 @@ function init() {
             }
             setImmediate(step, 0);
         })();
+        if (stop) regl.destroy();
     }
     
     onEnterFrame(getCurrentState());
 
     return () => {
         stop = true;
-        regl.destroy();
     }
 }
 
@@ -328,6 +332,10 @@ window.addEventListener('resize', () => {
     stopCurrentLoop = init();
 });
 
-document.addEventLister('keydown', e => {
-    console.log("hallo", e);
+document.addEventListener('keydown', e => {
+    if (['1', '2', '3', '4'].some(p => p === e.key)) {
+        stopCurrentLoop();
+        perf = parseInt(e.key);
+        stopCurrentLoop = init();
+    }
 })
