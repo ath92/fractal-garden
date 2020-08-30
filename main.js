@@ -78,10 +78,6 @@ function init() {
     // 30fps + 4ms timeslot for drawing to canvas and doing other things
     const threshold = 1000 / 60 - 4;
     
-    controller.playerControls.onPointerLock = () => {
-        document.body.classList.toggle('has-pointer-lock');
-    };
-    
     const container = document.querySelector('.container');
     
     // resize to prevent rounding errors
@@ -150,10 +146,7 @@ function init() {
             cameraDirection: regl.prop('cameraDirection'),
             offset: regl.prop('offset'),
             repeat: regl.prop('repeat'),
-            hitThreshold: regl.prop('hitThreshold'),
-            power: regl.prop('power'),
-            maxIterations: regl.prop('maxIterations'),
-            mandelbulbIterations: regl.prop('mandelbulbIterations'),
+            scroll: regl.prop('scroll'),
         },
         attributes: {
             position
@@ -285,7 +278,7 @@ function init() {
 
     let stop = false;
     
-    function onEnterFrame(state) {
+    function onEnterFrame(state) {  
         const start = performance.now();
         const render = generateRenderSteps(state);
         let i = 0;

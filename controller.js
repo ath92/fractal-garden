@@ -1,37 +1,19 @@
 import PlayerControls from './player-controls';
-import * as dat from 'dat.gui';
 
 class Controller {
     constructor() {
         Object.assign(this, {
-            power: 12,
-            dr: 1,
-            r: 0,
-            hitThreshold: 0.0005,
-            maxIterations: 100,
-            mandelbulbIterations: 10,
+            scroll: 0,
         });
         this.playerControls = new PlayerControls();
-
-        this.createGUI();
-    }
-
-    createGUI() {
-        const gui = new dat.GUI();
-        gui.add(this, 'power', 1, 20);
-        gui.add(this, 'hitThreshold', -1, 1.000);
-        gui.add(this, 'maxIterations', 150, 300);
-        gui.add(this, 'mandelbulbIterations', 1, 20);
+        window.addEventListener("wheel", e => {
+            this.scroll += e.deltaY / 1000;
+        });
     }
 
     get state() {
         return {
-            power: this.power,
-            dr: this.dr,
-            r: this.r,
-            hitThreshold: this.hitThreshold,
-            maxIterations: this.maxIterations,
-            mandelbulbIterations: this.mandelbulbIterations,
+            scroll: this.scroll,
             cameraPosition: [...this.playerControls.position],
             cameraDirection: this.playerControls.directionMatrix,
         }

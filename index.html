@@ -8,6 +8,8 @@
                 padding: 0;
                 width: 100%;
                 height: 100%;
+                overscroll-behavior: none;
+                font-size: 12px;
             }
             
             body.has-pointer-lock .message {
@@ -15,28 +17,41 @@
             }
 
             .message {
-                width: 100%;
-                height: 100%;
+                width: 400px;
                 position: fixed;
+                left: 50%;
+                margin-left: -200px;
                 z-index: 2;
-                padding: 20px;
+                padding: 2rem;
                 box-sizing: border-box;
-                line-height: 1.6em;
-                text-align: center;
-                top: 0;
+                line-height: 1.6rem;
+                bottom: 2rem;
                 pointer-events: none;
+                background-color: rgba(0,0,0,.8);
+                border: 1px solid rgba(255, 255, 255, .5);
+                box-shadow: 0px 2px 8px rgba(0,0,0,.8);
+                border-radius: .5rem;
+                pointer-events: all;
+                transition: .2s ease-in-out;
+            }
+
+            .message.hidden {
+                bottom: -9.5rem;
             }
 
             .message .text {
-                color: white;
-                text-shadow: 2px 2px 2px black;
+                color: #ddd;
                 font-family: sans-serif;
-                font-size: 20px;
-                pointer-events: all;
+                font-size: 1rem;
             }
 
-            .dg.ac {
-                z-index: 10!important; /* dat.gui */
+            .message .close {
+                position: absolute;
+                top: 1rem;
+                right: 1rem;
+                border: none;
+                background: transparent;
+                color: white;
             }
         </style>
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -46,14 +61,29 @@
     </head>
     <body>
         <div class="container"></div>
-        <!-- <div style="position: fixed; top: 50%; left: 50%; width: 1px; height: 1px; background: red; z-index:1000"></div> -->
-        <div class="message">
+        <div class="message" onClick="show()">
             <div class="text">
-                Click to look around, WASD / Arrow keys to move around.<br />
-                Hold shift key to go faster.<br /><br />
+                Click to look around. Scroll to change shape.<br />
+                WASD / Arrow keys to move around. Hold shift key to go faster.<br /><br />
+                <a href="https://github.com/ath92/fractal-garden" class="text">View source on Github</a>
             </div>
-            <a href="https://github.com/ath92/fractal-garden" class="text">View source on Github</a>
+            <button class="close" onClick="event.stopPropagation(); hide()">
+                ✕
+            </button>
         </div>
+        <script type="text/javascript">
+            const message = document.querySelector(".message");
+
+            const isHidden = () => message.classList.contains("hidden");
+
+            function show() {
+                message.classList.remove("hidden");
+            }
+
+            function hide() {
+                message.classList.add("hidden");
+            }
+        </script>
         
         <script src="main.js"></script>
     </body>
