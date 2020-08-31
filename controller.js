@@ -4,7 +4,7 @@ class Controller {
     constructor() {
         Object.assign(this, {
             scrollY: 0,
-            scrollX: 0.1,
+            scrollX: 0.02,
         });
         this.playerControls = new PlayerControls();
         window.addEventListener("wheel", e => {

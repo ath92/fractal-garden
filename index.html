@@ -68,22 +68,23 @@
                 Press 1, 2, 3, or 4 to select performance / quality<br />
                 <a href="https://github.com/ath92/fractal-garden" class="text">View source on Github</a>
             </div>
-            <button class="close" onclick="event.stopPropagation(); hide()" ontouch="event.stopPropagation(); hide()">
+            <button class="close" onclick="event.stopPropagation(); hide()">
                 ✕
             </button>
         </div>
         <script type="text/javascript">
             const message = document.querySelector(".message");
+            const close = document.querySelector(".message");
 
             const isHidden = () => message.classList.contains("hidden");
 
-            function show() {
+            message.addEventListener("click", function show() {
                 message.classList.remove("hidden");
-            }
+            });
 
-            function hide() {
+            close.addEventListener("click", function hide() {
                 message.classList.add("hidden");
-            }
+            });
         </script>
         
         <script src="main.js"></script>

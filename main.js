@@ -287,11 +287,14 @@ function init() {
     let stop = false;
     
     function onEnterFrame(state) {  
+        if (stop) {
+            regl.destroy();
+            return;
+        }
         const start = performance.now();
         const render = generateRenderSteps(state);
         let i = 0;
         (function step() {
-            if (stop) return;
             const { value: fbo, done } = render.next();
             i++;
     
@@ -315,7 +318,6 @@ function init() {
             }
             setImmediate(step, 0);
         })();
-        if (stop) regl.destroy();
     }
     
     onEnterFrame(getCurrentState());
