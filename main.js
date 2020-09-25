@@ -1,9 +1,8 @@
 import Regl from 'regl';
-import frag from './mandelbulb.glsl';
+import fragmentShader from './mandelbulb.glsl';
 import passThroughVert from './pass-through-vert.glsl';
 import upSampleFrag from './upsample.glsl';
 import Controller from './controller';
-import { mat4, vec3 } from 'gl-matrix';
 import 'setimmediate';
 
 const controller = new Controller();
@@ -78,11 +77,11 @@ const getRenderSettings = () => {
     }
 }
 
-function init() {
+function init(frag = fragmentShader) {
     const { repeat, offsets } = getRenderSettings();
     
     // This controls the FPS (not in an extremely precise way, but good enough)
-    // 30fps + 4ms timeslot for drawing to canvas and doing other things
+    // 60fps + 4ms timeslot for drawing to canvas and doing other things
     const threshold = 1000 / 60 - 4;
     
     const container = document.querySelector('.container');
@@ -268,7 +267,7 @@ function init() {
     })();
     
     // In order to check if the state has changes, we poll the player controls every frame.
-    // TODO: refactor this to a more functional approach
+    // TODO: refactor this so state changes automatically schedules re-render
     function pollForChanges(callbackIfChanges, lastFBO) {
         const currentState = getCurrentState();
         (function checkForChanges() {
@@ -284,10 +283,11 @@ function init() {
         })();
     }
 
-    let stop = false;
+    let bail = false;
+    let frameCallback = () => {};
     
     function onEnterFrame(state) {  
-        if (stop) {
+        if (bail) {
             regl.destroy();
             return;
         }
@@ -310,6 +310,7 @@ function init() {
             if (now - start > threshold) {
                 // out of time, draw to screen
                 drawToCanvas({ texture: fbo });
+                frameCallback();
                 if (stateHasChanges) {
                     // console.log(i); // amount of render steps completed
                     requestAnimationFrame(() => onEnterFrame(newState));
@@ -322,22 +323,60 @@ function init() {
     
     onEnterFrame(getCurrentState());
 
-    return () => {
-        stop = true;
+    return {
+        regl,
+        stop() {
+            bail = true;
+        },
+        startRecording(onFrame) {
+            frameCallback = onFrame;
+        },
+        stopRecording() {
+            frameCallback = () => {};
+        }
     }
 }
 
-let stopCurrentLoop = init();
+let instance = init();
 // reinit on resize
 window.addEventListener('resize', () => {
-    stopCurrentLoop();
-    stopCurrentLoop = init();
+    instance.stop();
+    instance = init();
 });
 
+let isRecording = false;
+let mediaRecorder;
 document.addEventListener('keydown', e => {
     if (['1', '2', '3', '4'].some(p => p === e.key)) {
-        stopCurrentLoop();
+        instance.stop();
         perf = parseInt(e.key);
-        stopCurrentLoop = init();
+        instance = init();
+    }
+    if (e.key === 'r') {
+        if (!isRecording) {
+            isRecording = true;
+            const canvas = document.querySelector("canvas");
+            const video = document.querySelector("video");
+            const stream = canvas.captureStream(60);
+            mediaRecorder = new MediaRecorder(stream, {
+                videoBitsPerSecond : 25000000,
+                mimeType : 'video/webm;codecs="vp9"'
+            });
+            const chunks = [];
+            mediaRecorder.ondataavailable = function(e) {
+                console.log(e.data);
+              chunks.push(e.data);
+            };
+            mediaRecorder.onstop = function(e) {
+                const blob = new Blob(chunks, { 'type' : 'video/webm' });
+                const videoURL = URL.createObjectURL(blob);
+                video.src = videoURL;
+                video.play()
+            };
+            mediaRecorder.start();
+        } else {
+            isRecording = false;
+            mediaRecorder.stop();
+        }
     }
 })
