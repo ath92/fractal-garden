@@ -9,7 +9,7 @@
                 width: 100%;
                 height: 100%;
                 overscroll-behavior: none;
-                font-size: 11px;
+                font-size: 14px;
             }
             
             body.has-pointer-lock .message {
@@ -36,12 +36,12 @@
             }
 
             .message.hidden {
-                bottom: -9.5rem;
+                bottom: -200px;
             }
 
             .message .text {
                 color: #ddd;
-                font-family: courier, sans-serif;
+                font-family: sans-serif;
                 font-size: 1rem;
             }
 
@@ -52,6 +52,13 @@
                 border: none;
                 background: transparent;
                 color: white;
+                cursor: pointer;
+            }
+
+            .help {
+                position: fixed;
+                bottom: 2rem;
+                right: 2rem;
             }
         </style>
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -61,28 +68,29 @@
     </head>
     <body>
         <div class="container"></div>
-        <div class="message" onClick="show()">
+        <div class="message hidden">
             <div class="text">
                 Click to look around. Scroll to change shape.<br />
                 WASD / Arrow keys to move around. Hold shift key to go faster.<br />
                 Press 1, 2, 3, or 4 to select performance / quality<br />
                 <a href="https://github.com/ath92/fractal-garden" class="text">View source on Github</a>
             </div>
-            <button class="close" onclick="event.stopPropagation(); hide()">
+            <button class="close">
                 ✕
             </button>
         </div>
+        <button title="help" class="help">?</button>
         <script type="text/javascript">
             const message = document.querySelector(".message");
-            const close = document.querySelector(".message");
+            const help = document.querySelector(".help");
+            const close = document.querySelector(".close");
 
-            const isHidden = () => message.classList.contains("hidden");
-
-            message.addEventListener("click", function show() {
-                message.classList.remove("hidden");
+            help.addEventListener("click", function show() {
+                message.classList.toggle("hidden");
             });
 
-            close.addEventListener("click", function hide() {
+            close.addEventListener("click", function hide(e) {
+                e.stopPropagation();
                 message.classList.add("hidden");
             });
         </script>

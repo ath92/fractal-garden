@@ -6,7 +6,7 @@ const backward = vec3.fromValues(0, 0, -1);
 const left = vec3.fromValues(-1, 0, 0);
 const right = vec3.fromValues(1, 0, 0);
 
-const minSpeed = 0.0005;
+const minSpeed = 0.00005;
 
 function getTouchEventCoordinates(touchEvent) {
     const lastTouch = touchEvent.touches[touchEvent.touches.length - 1];
@@ -17,9 +17,11 @@ function getTouchEventCoordinates(touchEvent) {
 }
 
 export default class PlayerControls {
-    constructor(speed = 0.0012, mouseSensitivity = 0.15, touchSensitivity = 0.012) {
+    constructor(acceleration = 0.00010, friction = 0.12, mouseSensitivity = 0.15, touchSensitivity = 0.012) {
         // TODO: cleanup event listeners
-        this.speed = speed;
+        this.acceleration = acceleration;
+        this.friction = friction;
+        this.speed = vec3.fromValues(0, 0, 0.01);
         this.mouseSensitivity = mouseSensitivity;
         this.touchSensitivity = touchSensitivity;
         this.position = vec3.fromValues(0, 0, -9);
@@ -136,15 +138,16 @@ export default class PlayerControls {
         if (this.directionKeys.backward) vec3.add(diff, diff, backward);
         if (this.directionKeys.left) vec3.add(diff, diff, left);
         if (this.directionKeys.right) vec3.add(diff, diff, right);
-        vec3.normalize(diff, diff);
-
-        // const currentDistance = getCurrentDistance(this.position)
-        const currentDistance = 1;
-        let speedLimit = this.speed * Math.max(currentDistance, minSpeed) ** 0.5;
-        if (this.sprintMode) speedLimit = speedLimit ** 0.8;
-        vec3.scale(diff, diff, speedLimit);
+        // vec3.normalize(diff, diff);
         vec3.transformQuat(diff, diff, this.direction);
-        vec3.add(this.position, this.position, diff);
+        vec3.scale(diff, diff, (this.sprintMode ? 4 : 1) * this.acceleration);
+        // const currentDistance = getCurrentDistance(this.position)
+        vec3.scale(this.speed, this.speed, 1 - this.friction);
+        if (vec3.length(this.speed) < minSpeed) {
+            vec3.set(this.speed, 0, 0, 0);
+        }
+        vec3.add(this.speed, this.speed, diff);
+        vec3.add(this.position, this.position, this.speed);
     
         requestAnimationFrame(() => this.loop());
     }
