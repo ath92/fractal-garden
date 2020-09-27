@@ -77,26 +77,15 @@ const getRenderSettings = () => {
     }
 }
 
-function init(frag = fragmentShader) {
-    const { repeat, offsets } = getRenderSettings();
-    
-    // This controls the FPS (not in an extremely precise way, but good enough)
-    // 60fps + 4ms timeslot for drawing to canvas and doing other things
-    const threshold = 1000 / 60 - 4;
-    
-    const container = document.querySelector('.container');
-    
-    // resize to prevent rounding errors
-    let width = window.innerWidth;
-    let height = window.innerHeight;
-    while (width % repeat[0]) width--;
-    while (height % repeat[1]) height--;
-
-    container.style.width = `${width}px`;
-    container.style.height = `${height}px`;
-
-    
-    const regl = Regl(container); // no params = full screen canvas
+function setupRenderer({
+    frag,
+    reglContext,
+    repeat,
+    offsets,
+    width,
+    height,
+}) {
+    const regl = Regl(reglContext); // no params = full screen canvas
     
     // The FBO the actual SDF samples are rendered into
     let sdfTexture = regl.texture({
@@ -252,6 +241,38 @@ function init(frag = fragmentShader) {
         // also return the current screenbuffer so the last next() on the generator still gives a reference to what needs to be drawn
         return currentScreenBuffer;
     };
+
+    return {
+        regl,
+        drawToCanvas, // will draw fbo to canvas (or whatever was given as regl context)
+        generateRenderSteps, // generator that yields FBOs, that can be drawn to the canvas
+    }
+}
+
+const init = () => {
+    const { repeat, offsets } = getRenderSettings();
+    const container = document.querySelector('.container');
+    
+    // resize to prevent rounding errors
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    while (width % repeat[0]) width--;
+    while (height % repeat[1]) height--;
+
+    container.style.width = `${width}px`;
+    container.style.height = `${height}px`;
+    const renderer = setupRenderer({
+        frag: fragmentShader,
+        reglContext: container,
+        repeat,
+        offsets,
+        width,
+        height,
+    });
+    
+    // This controls the FPS (not in an extremely precise way, but good enough)
+    // 60fps + 4ms timeslot for drawing to canvas and doing other things
+    const threshold = 1000 / 60 - 4;
     
     // This essentially checks if the state has changed by doing a deep equals
     // If there are changes, it returns a new object so in other places, we can just check if the references are the same
@@ -273,7 +294,7 @@ function init(frag = fragmentShader) {
         (function checkForChanges() {
             // TODO: not sure why it is necessary to re-draw the last fbo here.
             // Sometimes the last FBO is not drawn in the render step.
-            drawToCanvas({ texture: lastFBO });
+            renderer.drawToCanvas({ texture: lastFBO });
             const newState = getCurrentState();
             if (newState !== currentState) {
                 callbackIfChanges(newState);
@@ -284,22 +305,18 @@ function init(frag = fragmentShader) {
     }
 
     let bail = false;
-    let frameCallback = () => {};
-    
     function onEnterFrame(state) {  
         if (bail) {
             regl.destroy();
             return;
         }
         const start = performance.now();
-        const render = generateRenderSteps(state);
-        let i = 0;
+        const render = renderer.generateRenderSteps(state);
         (function step() {
             const { value: fbo, done } = render.next();
-            i++;
     
             if (done) {
-                drawToCanvas({ texture: fbo });
+                renderer.drawToCanvas({ texture: fbo });
                 pollForChanges(onEnterFrame, fbo);
                 return;
             }
@@ -309,8 +326,7 @@ function init(frag = fragmentShader) {
             const stateHasChanges = newState !== state;
             if (now - start > threshold) {
                 // out of time, draw to screen
-                drawToCanvas({ texture: fbo });
-                frameCallback();
+                renderer.drawToCanvas({ texture: fbo });
                 if (stateHasChanges) {
                     // console.log(i); // amount of render steps completed
                     requestAnimationFrame(() => onEnterFrame(newState));
@@ -320,20 +336,10 @@ function init(frag = fragmentShader) {
             setImmediate(step, 0);
         })();
     }
-    
     onEnterFrame(getCurrentState());
 
     return {
-        regl,
-        stop() {
-            bail = true;
-        },
-        startRecording(onFrame) {
-            frameCallback = onFrame;
-        },
-        stopRecording() {
-            frameCallback = () => {};
-        }
+        stop: () => bail = true,
     }
 }
 
@@ -344,8 +350,6 @@ window.addEventListener('resize', () => {
     instance = init();
 });
 
-let isRecording = false;
-let mediaRecorder;
 document.addEventListener('keydown', e => {
     if (['1', '2', '3', '4'].some(p => p === e.key)) {
         instance.stop();
@@ -353,30 +357,6 @@ document.addEventListener('keydown', e => {
         instance = init();
     }
     if (e.key === 'r') {
-        if (!isRecording) {
-            isRecording = true;
-            const canvas = document.querySelector("canvas");
-            const video = document.querySelector("video");
-            const stream = canvas.captureStream(60);
-            mediaRecorder = new MediaRecorder(stream, {
-                videoBitsPerSecond : 25000000,
-                mimeType : 'video/webm;codecs="vp9"'
-            });
-            const chunks = [];
-            mediaRecorder.ondataavailable = function(e) {
-                console.log(e.data);
-              chunks.push(e.data);
-            };
-            mediaRecorder.onstop = function(e) {
-                const blob = new Blob(chunks, { 'type' : 'video/webm' });
-                const videoURL = URL.createObjectURL(blob);
-                video.src = videoURL;
-                video.play()
-            };
-            mediaRecorder.start();
-        } else {
-            isRecording = false;
-            mediaRecorder.stop();
-        }
+        // record
     }
 })
