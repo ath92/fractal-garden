@@ -1,15 +1,12 @@
-import Regl from 'regl';
+
 import fragmentShader from './mandelbulb.glsl';
-import passThroughVert from './pass-through-vert.glsl';
-import upSampleFrag from './upsample.glsl';
 import Controller from './controller';
+import setupRenderer from './renderer';
 import 'setimmediate';
 
 const controller = new Controller();
 
-let perf = 3;
-const getRenderSettings = () => {
-    console.log(perf);
+const getRenderSettings = (performance) => {
     // On small screens, we do less upsampling, to reduce the amount of overhead introduced
     if (window.innerWidth <= 800) {
         return {
@@ -25,12 +22,12 @@ const getRenderSettings = () => {
     // The render function is divided into a certain number of steps. This is done horizontally and vertically;
     // In each step 1/(x*y)th (1/x horizontal and 1/y vertical) of all pixels on the screen are rendered
     // If there is not enough time left to maintain a reasonable FPS, the renderer can bail at any time after the first step.
-    if (perf === 1) return {
+    if (performance === 1) return {
         repeat: [1, 1],
         offsets: [],
     };
 
-    if (perf === 2) return {
+    if (performance === 2) return {
         repeat: [2, 2],
         offsets: [
             [1, 1],
@@ -41,7 +38,7 @@ const getRenderSettings = () => {
     
     // Each render step gets an offset ([0, 0] in the first, mandatory step)
     // This controls what pixels are used to draw each render step
-    if (perf === 3) return {
+    if (performance === 3) return {
         repeat: [3, 3],
         offsets: [
             [2, 2],
@@ -77,182 +74,9 @@ const getRenderSettings = () => {
     }
 }
 
-function setupRenderer({
-    frag,
-    reglContext,
-    repeat,
-    offsets,
-    width,
-    height,
-}) {
-    const regl = Regl(reglContext); // no params = full screen canvas
-    
-    // The FBO the actual SDF samples are rendered into
-    let sdfTexture = regl.texture({
-        width: Math.round(width / repeat[0]),
-        height: Math.round(height / repeat[1])
-    });
-    const sdfFBO = regl.framebuffer({ color: sdfTexture });
-    const getSDFFBO = () => sdfFBO({ color: sdfTexture });
-    
-    // We need a double buffer in order to progressively add samples for each render step
-    const createPingPongBuffers = textureOptions => {
-        const tex1 = regl.texture(textureOptions);
-        const tex2 = regl.texture(textureOptions);
-        const one = regl.framebuffer({
-          color: tex1
-        });
-        const two = regl.framebuffer({
-          color: tex2
-        });
-        let counter = 0;
-        return () => {
-            counter++;
-            if (counter % 2 === 0) {
-                return one({ color: tex1 });
-            }
-            return two({ color: tex2 });
-        }
-    };
-    
-    let getScreenFBO = createPingPongBuffers({
-        width,
-        height,
-    });
-    
-    // screen-filling rectangle
-    const position = regl.buffer([
-        [-1, -1],
-        [1, -1],
-        [1,  1],
-        [-1, -1],   
-        [1, 1,],
-        [-1, 1]
-    ]);
-    
-    const renderSDF = regl({
-        context: {
-        },
-        frag,
-        vert: passThroughVert,
-        uniforms: {
-            screenSize: regl.prop('screenSize'),
-            cameraPosition: regl.prop('cameraPosition'),
-            cameraDirection: regl.prop('cameraDirection'),
-            offset: regl.prop('offset'),
-            repeat: regl.prop('repeat'),
-            scrollX: regl.prop('scrollX'),
-            scrollY: regl.prop('scrollY'),
-        },
-        attributes: {
-            position
-        },
-        count: 6,
-    });
-    
-    // render texture to screen
-    const drawToCanvas = regl({
-        vert: passThroughVert,
-        frag: `
-            precision highp float;
-            uniform sampler2D texture;
-            varying vec2 uv;
-    
-            void main () {
-              vec4 color = texture2D(texture, uv * 0.5 + 0.5);
-              gl_FragColor = color;
-            }
-        `,
-        uniforms: {
-            texture: regl.prop('texture'),
-        },
-        attributes: {
-            position
-        },
-        count: 6,
-    });
-    
-    const upSample = regl({
-        vert: passThroughVert,
-        frag: upSampleFrag,
-        uniforms: {
-            sample: regl.prop('sample'), // sampler2D
-            previous: regl.prop('previous'), // sampler2D
-            repeat: regl.prop('repeat'), // vec2
-            offset: regl.prop('offset'), // vec2
-            screenSize: regl.prop('screenSize'), // vec2
-        },
-        attributes: {
-            position
-        },
-        count: 6,
-    });
-    
-    // This generates each of the render steps, to be used in the main animation loop
-    // By pausing the execution of this function, we can let the main thread handle events, gc, etc. between steps
-    // It also allows us to bail early in case we ran out of time
-    function* generateRenderSteps(renderState){
-        const fbo = getSDFFBO();
-        fbo.use(() => {
-            renderSDF({
-                screenSize: [width / repeat[0], height / repeat[1]],
-                offset: [0,0],
-                repeat,
-                ...renderState
-            });
-        });
-    
-        yield fbo;
-        
-        // draw 1/4 res SDF FBO to full res FBO
-        let currentScreenBuffer = getScreenFBO();
-        currentScreenBuffer.use(() => {
-            drawToCanvas({ texture: fbo });
-        });
-    
-        const performUpSample = (previousScreenBuffer, offset) => {
-            const newSampleFBO = getSDFFBO();
-            newSampleFBO.use(() => {
-                renderSDF({
-                    screenSize: [width / repeat[0], height / repeat[1]],
-                    offset,
-                    repeat,
-                    ...renderState
-                });
-            });
-    
-            const newScreenBuffer = getScreenFBO();
-            newScreenBuffer.use(() => {
-                upSample({
-                    sample: newSampleFBO,
-                    previous: previousScreenBuffer,
-                    repeat,
-                    offset,
-                    screenSize: [width, height],
-                });
-            });
-            return newScreenBuffer;
-        }
-    
-        for (let offset of offsets) {
-            currentScreenBuffer = performUpSample(currentScreenBuffer, offset);
-            yield currentScreenBuffer;
-        }
-        // also return the current screenbuffer so the last next() on the generator still gives a reference to what needs to be drawn
-        return currentScreenBuffer;
-    };
-
-    return {
-        regl,
-        drawToCanvas, // will draw fbo to canvas (or whatever was given as regl context)
-        generateRenderSteps, // generator that yields FBOs, that can be drawn to the canvas
-    }
-}
-
-const init = () => {
-    const { repeat, offsets } = getRenderSettings();
+const init = (performance) => {
+    const { repeat, offsets } = getRenderSettings(performance);
     const container = document.querySelector('.container');
-    
     // resize to prevent rounding errors
     let width = window.innerWidth;
     let height = window.innerHeight;
@@ -305,30 +129,37 @@ const init = () => {
     }
 
     let bail = false;
+    let frameCallback = null;
     function onEnterFrame(state) {  
         if (bail) {
-            regl.destroy();
+            renderer.regl.destroy();
             return;
         }
-        const start = performance.now();
+        if (frameCallback) {
+            frameCallback(state);
+        }
+        const start = Date.now();
         const render = renderer.generateRenderSteps(state);
+        let i = 0;
         (function step() {
+            i++;
             const { value: fbo, done } = render.next();
+            const now = Date.now();
     
             if (done) {
+                console.log("frametime",now-start)
                 renderer.drawToCanvas({ texture: fbo });
                 pollForChanges(onEnterFrame, fbo);
                 return;
             }
     
-            const now = performance.now();
             const newState = getCurrentState();
             const stateHasChanges = newState !== state;
             if (now - start > threshold) {
                 // out of time, draw to screen
                 renderer.drawToCanvas({ texture: fbo });
+                // console.log(i); // amount of render steps completed
                 if (stateHasChanges) {
-                    // console.log(i); // amount of render steps completed
                     requestAnimationFrame(() => onEnterFrame(newState));
                     return;
                 }
@@ -340,23 +171,46 @@ const init = () => {
 
     return {
         stop: () => bail = true,
+        getFrameStates: callback => {
+            frameCallback = callback;
+        },
     }
 }
 
-let instance = init();
+
+let perf = 3;
+let instance = init(perf);
 // reinit on resize
 window.addEventListener('resize', () => {
     instance.stop();
-    instance = init();
+    instance = init(perf);
 });
 
+let recording = false;
+let states = [];
 document.addEventListener('keydown', e => {
     if (['1', '2', '3', '4'].some(p => p === e.key)) {
         instance.stop();
         perf = parseInt(e.key);
-        instance = init();
+        instance = init(perf);
     }
     if (e.key === 'r') {
         // record
+        // renderSingleFrame(controller.state);
+        if (!recording) {
+            instance.getFrameStates((state) => states.push({ time: Date.now(), state }));
+        } else {
+            console.log(states);
+            fetch('http://localhost:3000/render', {
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json'
+                },
+                method: 'post',
+                body: JSON.stringify({ states }),
+            }).then(console.log);
+            states = [];
+        }
+        recording = !recording;
     }
 })

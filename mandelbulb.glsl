@@ -51,7 +51,7 @@ float doModel(vec3 p) {
 		z = zr * vec3(sin(theta) * cos(phi), sin(phi) * sin(theta), cos(theta));
 		z += pos;
 	}
-	return 0.5 * log(r) * r / dr;
+	return abs(0.5 * log(r) * r / dr);
 }
 // this is kinda contrived and does a bunch of stuff I'm not using right now, but I'll leave it like this for now
 vec3 trace(vec3 origin, vec3 direction, out int iterations) {
