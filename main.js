@@ -1,4 +1,4 @@
-
+import Regl from "regl";
 import fragmentShader from './mandelbulb.glsl';
 import Controller from './controller';
 import setupRenderer from './renderer';
@@ -76,18 +76,24 @@ const getRenderSettings = (performance) => {
 
 const init = (performance) => {
     const { repeat, offsets } = getRenderSettings(performance);
-    const container = document.querySelector('.container');
+    const canvas = document.querySelector('canvas');
     // resize to prevent rounding errors
     let width = window.innerWidth;
     let height = window.innerHeight;
     while (width % repeat[0]) width--;
     while (height % repeat[1]) height--;
 
-    container.style.width = `${width}px`;
-    container.style.height = `${height}px`;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    canvas.width = width * window.devicePixelRatio;
+    canvas.height = height * window.devicePixelRatio;
+    const context = canvas.getContext("webgl");
+
+    const regl = Regl(context); // no params = full screen canvas
+    
     const renderer = setupRenderer({
         frag: fragmentShader,
-        reglContext: container,
+        regl,
         repeat,
         offsets,
         width,
@@ -135,6 +141,7 @@ const init = (performance) => {
             renderer.regl.destroy();
             return;
         }
+        renderer.regl.poll();
         if (frameCallback) {
             frameCallback(state);
         }
@@ -170,7 +177,9 @@ const init = (performance) => {
     onEnterFrame(getCurrentState());
 
     return {
-        stop: () => bail = true,
+        stop: () => {
+            bail = true;
+        },
         getFrameStates: callback => {
             frameCallback = callback;
         },
@@ -187,7 +196,7 @@ window.addEventListener('resize', () => {
 });
 
 let recording = false;
-let states = [];
+let frames = [];
 document.addEventListener('keydown', e => {
     if (['1', '2', '3', '4'].some(p => p === e.key)) {
         instance.stop();
@@ -198,18 +207,18 @@ document.addEventListener('keydown', e => {
         // record
         // renderSingleFrame(controller.state);
         if (!recording) {
-            instance.getFrameStates((state) => states.push({ time: Date.now(), state }));
+            instance.getFrameStates((state) => frames.push({ time: Date.now(), state }));
         } else {
-            console.log(states);
+            console.log(frames);
             fetch('http://localhost:3000/render', {
                 headers: {
                   'Accept': 'application/json',
                   'Content-Type': 'application/json'
                 },
                 method: 'post',
-                body: JSON.stringify({ states }),
+                body: JSON.stringify({ frames }),
             }).then(console.log);
-            states = [];
+            frames = [];
         }
         recording = !recording;
     }

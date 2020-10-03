@@ -2,18 +2,43 @@ import headlessRenderer from '../headless.js';
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
-console.log("hahaha", headlessRenderer)
+import { writePngFile } from "node-libpng";
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 const port = 3000;
+
+const width = 100;
+const height = 100;
+const headless = headlessRenderer(width, height);
+
+const transformFrames = (frames) => {
+    return frames.map(frame => {
+        return {
+            ...frame,
+            state: {
+                ...frame.state,
+                cameraDirection: Object.values(frame.state.cameraDirection), // turn from object with string indices into array
+            }
+        }
+    })
+}
+
 app.get('/', (req, res) => {
 
   res.send('Hello World!')
 });
 
-app.post('/render', (req, res) => {
-    console.log(req.body);
+app.post('/render', async (req, res) => {
+    // console.log(req.body);
+    const frames = headless.renderFrames(transformFrames(req.body?.frames));
+    const data = Buffer.from(frames[frames.length - 1]);
+    console.log(data);
+    // fs.writeFileSync(`pic.png`, data, 'binary');
+    await writePngFile("image.png", data, {
+        width,
+        height,
+    });
     res.send('Great success!');
     /**
      * So basically:

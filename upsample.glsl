@@ -1,6 +1,6 @@
 precision highp float;
 precision mediump sampler2D;
-uniform sampler2D sample;
+uniform sampler2D inputSample;
 uniform sampler2D previous;
 uniform vec2 offset;
 uniform vec2 repeat;
@@ -25,7 +25,7 @@ void main () {
     vec2 pixel = position / screenSize;
 
     vec4 previousColor = texture2D(previous, pixel);
-    vec4 newColor = texture2D(sample, pixel);
+    vec4 newColor = texture2D(inputSample, pixel);
 
     gl_FragColor = mix(previousColor, newColor, getMixFactor(position));
 }

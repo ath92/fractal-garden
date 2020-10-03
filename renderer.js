@@ -1,18 +1,14 @@
-import Regl from 'regl';
 import passThroughVert from './pass-through-vert.glsl';
 import upSampleFrag from './upsample.glsl';
 
 function setupRenderer({
     frag,
-    reglContext,
+    regl,
     repeat = [1, 1],
     offsets = [],
     width,
     height,
 }) {
-    console.log(reglContext)
-    const regl = Regl(reglContext); // no params = full screen canvas
-    
     // The FBO the actual SDF samples are rendered into
     let sdfTexture = regl.texture({
         width: Math.round(width / repeat[0]),
@@ -57,10 +53,8 @@ function setupRenderer({
     ]);
     
     const renderSDF = regl({
-        context: {
-        },
         frag,
-        vert: passThroughVert,
+        vert: passThroughVert.replace("#define GLSLIFY 1", ""),
         uniforms: {
             screenSize: regl.prop('screenSize'),
             cameraPosition: regl.prop('cameraPosition'),
@@ -78,19 +72,20 @@ function setupRenderer({
     
     // render texture to screen
     const drawToCanvas = regl({
-        vert: passThroughVert,
+        vert: passThroughVert.replace("#define GLSLIFY 1\n", ""),
         frag: `
             precision highp float;
-            uniform sampler2D texture;
+            uniform sampler2D inputTexture;
             varying vec2 uv;
     
             void main () {
-              vec4 color = texture2D(texture, uv * 0.5 + 0.5);
+              vec4 color = texture2D(inputTexture, uv * 0.5 + 0.5);
+            //   vec4 color = vec4(uv.x, uv.y, 0, 1);
               gl_FragColor = color;
             }
         `,
         uniforms: {
-            texture: regl.prop('texture'),
+            inputTexture: regl.prop('texture'),
         },
         attributes: {
             position
@@ -99,10 +94,10 @@ function setupRenderer({
     });
     
     const upSample = regl({
-        vert: passThroughVert,
-        frag: upSampleFrag,
+        vert: passThroughVert.replace("#define GLSLIFY 1\n", ""),
+        frag: upSampleFrag.replace("#define GLSLIFY 1\n", ""),
         uniforms: {
-            sample: regl.prop('sample'), // sampler2D
+            inputSample: regl.prop('sample'), // sampler2D
             previous: regl.prop('previous'), // sampler2D
             repeat: regl.prop('repeat'), // vec2
             offset: regl.prop('offset'), // vec2
@@ -126,11 +121,10 @@ function setupRenderer({
                 repeat,
                 ...renderState
             });
+            // console.log("hier moet het eigenlijk 255 zijn", regl.read());
         });
-    
         yield fbo;
         
-        // draw 1/4 res SDF FBO to full res FBO
         let currentScreenBuffer = getScreenFBO();
         currentScreenBuffer.use(() => {
             drawToCanvas({ texture: fbo });
