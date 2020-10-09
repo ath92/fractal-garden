@@ -97,6 +97,10 @@
                 e.stopPropagation();
                 message.classList.add("hidden");
             });
+
+            if (window.innerWidth <= 800) {
+                message.classList.add("hidden");
+            }
         </script>
         
         <script src="main.js"></script>
