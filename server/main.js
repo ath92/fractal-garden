@@ -1,15 +1,16 @@
 import headlessRenderer from '../headless.js';
 import express from "express";
 import cors from "cors";
-import bodyParser from "body-parser";
-import { writePngFile } from "node-libpng";
+import { writePngFile, writePngFileSync } from "node-libpng";
+import fs from "fs";
+import cuid from "cuid";
 const app = express();
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json({ limit: "50mb" }));
 const port = 3000;
 
-const width = 100;
-const height = 100;
+const width = 1920;
+const height = 1080;
 const headless = headlessRenderer(width, height);
 
 const transformFrames = (frames) => {
@@ -32,22 +33,26 @@ app.get('/', (req, res) => {
 app.post('/render', async (req, res) => {
     // console.log(req.body);
     const frames = headless.renderFrames(transformFrames(req.body?.frames));
-    const data = Buffer.from(frames[frames.length - 1]);
-    console.log(data);
-    // fs.writeFileSync(`pic.png`, data, 'binary');
-    await writePngFile("image.png", data, {
-        width,
-        height,
-    });
+    const dir = `./render-results/${cuid()}`;
+
+    console.log("going to render", frames.length, "frames");
+
+    fs.mkdirSync(dir);
+    (function step(i = 0) {
+        let { value: frame, done } = frames.next();
+        if (done) return;
+        const data = Buffer.from(frame);
+        console.log(data);
+        writePngFileSync(`${dir}/frame-${i}.png`, data, {
+            width,
+            height,
+        });
+        step(i + 1);
+    })();
+
+    console.log("finished rendering images");
+
     res.send('Great success!');
-    /**
-     * So basically:
-it takes endTimeStamp - beginTimeStamp to get the whole timespan
-Then picks points in time along that timespan so that it has 60fps
-For each point, interpolate the state
-With that interpolated state, render a frame to img file (e.g. png)
-Then, once complete for all frames, encode into a video using ffmpeg
-     */
 })
 
 app.listen(port, () => {

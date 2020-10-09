@@ -107,4 +107,6 @@ void main() {
         getColor(float(iterations) / float(MAX_ITER), distance(collision, spaceRepetition / 2.)),
         1.
     );
+    // gl_FragColor = vec4(1., 0, 0, 1);
+    // return;
 }

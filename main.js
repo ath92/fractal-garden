@@ -76,7 +76,12 @@ const getRenderSettings = (performance) => {
 
 const init = (performance) => {
     const { repeat, offsets } = getRenderSettings(performance);
-    const canvas = document.querySelector('canvas');
+    let canvas = document.querySelector('canvas');
+    if (canvas) {
+        canvas.remove();
+    }
+    canvas = document.createElement('canvas');
+    document.querySelector('.container').appendChild(canvas);
     // resize to prevent rounding errors
     let width = window.innerWidth;
     let height = window.innerHeight;
@@ -87,7 +92,10 @@ const init = (performance) => {
     canvas.style.height = `${height}px`;
     canvas.width = width * window.devicePixelRatio;
     canvas.height = height * window.devicePixelRatio;
-    const context = canvas.getContext("webgl");
+    const context = canvas.getContext("webgl", {
+        preserveDrawingBuffer: true,
+        desynchronized: true,
+    });
 
     const regl = Regl(context); // no params = full screen canvas
     
@@ -136,12 +144,11 @@ const init = (performance) => {
 
     let bail = false;
     let frameCallback = null;
-    function onEnterFrame(state) {  
+    function onEnterFrame(state) {
         if (bail) {
             renderer.regl.destroy();
             return;
         }
-        renderer.regl.poll();
         if (frameCallback) {
             frameCallback(state);
         }
@@ -149,6 +156,9 @@ const init = (performance) => {
         const render = renderer.generateRenderSteps(state);
         let i = 0;
         (function step() {
+            regl.clear({
+                depth: 1,
+            });
             i++;
             const { value: fbo, done } = render.next();
             const now = Date.now();
@@ -207,6 +217,7 @@ document.addEventListener('keydown', e => {
         // record
         // renderSingleFrame(controller.state);
         if (!recording) {
+            frames = [];
             instance.getFrameStates((state) => frames.push({ time: Date.now(), state }));
         } else {
             console.log(frames);

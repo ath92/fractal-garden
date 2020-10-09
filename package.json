@@ -11,6 +11,7 @@
   "license": "MIT",
   "dependencies": {
     "cors": "^2.8.5",
+    "cuid": "^2.1.8",
     "express": "^4.17.1",
     "gl": "^4.8.0",
     "gl-matrix": "^3.2.1",
