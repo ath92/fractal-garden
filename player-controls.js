@@ -33,6 +33,8 @@ export default class PlayerControls {
         this.touchY = 0;
         this.touchStartX = window.innerWidth / 2;
         this.touchStartY = window.innerHeight / 2;
+        this.scrollX = 0;
+        this.scrollY = 0;
         this.directionKeys = {
             forward: false,
             backward: false,
@@ -110,6 +112,11 @@ export default class PlayerControls {
             this.isTouching = false;
         }
 
+        window.addEventListener("wheel", e => {
+            this.scrollY += e.deltaY / 5000;
+            this.scrollX += e.deltaX / 1000;
+        });
+
         document.addEventListener('touchend', onTouchOver);
         document.addEventListener('touchcancel', onTouchOver);
         document.addEventListener('mouseup', onTouchOver);
@@ -152,7 +159,12 @@ export default class PlayerControls {
         requestAnimationFrame(() => this.loop());
     }
 
-    get directionMatrix() {
-        return mat4.fromQuat(mat4.create(), this.direction);
+    get state() {
+        return {
+            scrollX: this.scrollX,
+            scrollY: this.scrollY,
+            cameraPosition: [...this.position],
+            cameraDirection: mat4.fromQuat(mat4.create(), this.direction),
+        }
     }
 }

@@ -1,10 +1,10 @@
 import Regl from "regl";
 import fragmentShader from './mandelbulb.glsl';
-import Controller from './controller';
+import PlayerControls from './player-controls';
 import setupRenderer from './renderer';
 import 'setimmediate';
 
-const controller = new Controller();
+const controller = new PlayerControls();
 
 const getRenderSettings = (performance) => {
     // On small screens, we do less upsampling, to reduce the amount of overhead introduced
