@@ -59,6 +59,7 @@ function setupRenderer({
             screenSize: regl.prop('screenSize'),
             cameraPosition: regl.prop('cameraPosition'),
             cameraDirection: regl.prop('cameraDirection'),
+            worldMat: regl.prop('worldMat'),
             offset: regl.prop('offset'),
             repeat: regl.prop('repeat'),
             scrollX: regl.prop('scrollX'),

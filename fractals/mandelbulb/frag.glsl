@@ -9,7 +9,7 @@ uniform bool onlyDistance;
 uniform float scrollX;
 uniform float scrollY;
 
-const float hitThreshold = 0.00015;
+const float hitThreshold = 0.0003;
 const int MAX_ITER = 200;
 
 const vec3 spaceRepetition = vec3(3.5);
@@ -30,7 +30,7 @@ vec3 opRepeat(vec3 p, vec3 distance) {
 float doModel(vec3 p) {
     vec3 pos = opRepeat(p, spaceRepetition);
 	vec3 z = pos;
-	float dr = 1.0;
+	float dr = 1.;
 	float r = 0.0;
 	for (int i = 0; i < 10; i++) {
 		r = length(z);

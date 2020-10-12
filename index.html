@@ -1,105 +1,110 @@
 <!doctype html>
 <html>
     <head>
-        <title>🥦 Fractal garden</title>
+        <title>Fractal garden</title>
+        <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;500&display=swap" rel="stylesheet">
         <style type="text/css">
             html, body {
+                font-size: 16px;
                 margin: 0;
                 padding: 0;
-                width: 100%;
-                height: 100%;
-                overscroll-behavior: none;
-                font-size: 14px;
+                background-color: #eeeef9;
+                color: #114;
             }
             
-            body.has-pointer-lock .message {
-                display: none;
-            }
-
-            .message {
-                width: 480px;
-                position: fixed;
-                left: 50%;
-                margin-left: -240px;
-                z-index: 2;
-                padding: 2rem;
+            * {
                 box-sizing: border-box;
-                line-height: 1.8rem;
-                bottom: 2rem;
-                pointer-events: none;
-                background-color: rgba(0,0,0,.8);
-                border: 1px solid rgba(255, 255, 255, .5);
-                box-shadow: 0px 8px 24px rgba(0,0,0,.4);
-                border-radius: .5rem;
-                pointer-events: all;
-                transition: .2s ease-in-out;
             }
 
-            .message.hidden {
-                bottom: -200px;
+            .main {
+                padding: 4rem;
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
             }
 
-            .message .text {
-                color: #ddd;
-                font-family: sans-serif;
+            h1 {
+                font-family: 'Fira Sans', Arial, Helvetica, sans-serif;
+                font-size: 3rem;
+                line-height: 1;
+                font-weight: 500;
+                margin: 0;
+            }
+
+            p {
+                font-family: 'Fira Sans', Arial, Helvetica, sans-serif;
+                font-weight: 300;
+                line-height: 2;
                 font-size: 1rem;
+                line-height: 2;
+                max-width: 65ch;
             }
 
-            .message .close {
-                position: absolute;
-                top: 1rem;
-                right: 1rem;
-                border: none;
-                background: transparent;
-                color: white;
-                cursor: pointer;
+            .thumbnails {
+                display: flex;
+                align-items: flex-start;
+                flex-wrap: wrap;
+                flex-grow: 1;
             }
 
-            .help {
-                position: fixed;
-                bottom: 2rem;
-                right: 2rem;
+            .fractal-link {
+                text-decoration: none;
+                margin: 2rem 2rem 0 0;
+                box-shadow: 0 .25rem 2rem rgba(0, 0, 0, 0);
+                border-radius: .5rem;
+                overflow: hidden;
+                transition: .2s ease-out;
+                transform: scale(1);
+            }
+
+            .fractal-link:hover {
+                box-shadow: 0 .25rem 1.5rem rgba(0, 0, 0, .3);
+                transform: scale(1.025);
+            }
+
+            .fractal-link > img {
+                width: 24rem;
+                height: 16rem;
+                display: block;
+            }
+
+            footer {
+                flex-grow: 0;
+                margin-top: auto;
+            }
+
+            footer p, footer a {
+                color: #668;
+            }
+
+            footer a {
+                display: inline-block;
+                position: relative;
+                z-index: 1;
+            }
+            
+            footer a:hover {
+                color: #112;
             }
         </style>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta property="og:title" content="Fractal Garden" />
-        <meta property="og:url" content="https://fractal.garden" />
-        <meta property="og:image" content="thumbnail.png" />
     </head>
     <body>
-        <div class="container">
-        </div>
-        <div class="message">
-            <div class="text">
-                Click to look around. Scroll to change shape.<br />
-                WASD / Arrow keys to move around. Hold shift key to go faster.<br />
-                Press 1, 2, 3, or 4 to select performance / quality<br />
-                <a href="https://github.com/ath92/fractal-garden" class="text">View source on Github</a>
-            </div>
-            <button class="close">
-                ✕
-            </button>
-        </div>
-        <button title="help" class="help">?</button>
-        <script type="text/javascript">
-            const message = document.querySelector(".message");
-            const help = document.querySelector(".help");
-            const close = document.querySelector(".close");
-
-            help.addEventListener("click", function show() {
-                message.classList.toggle("hidden");
-            });
-
-            close.addEventListener("click", function hide(e) {
-                e.stopPropagation();
-                message.classList.add("hidden");
-            });
-
-            if (window.innerWidth <= 800) {
-                message.classList.add("hidden");
-            }
-        </script>
-        
-        <script src="main.js"></script>
+        <div class="main">
+            <header>
+                <h1>Fractal.garden</h1>
+                <p>Explore 3d fractals in real time in your web browser. </p>
+            </header>
+            <section class="thumbnails">
+                <a href="viewer.html?fractal=menger" class="fractal-link">
+                    <img src="fractals/menger/thumbnail.png" alt="Menger sponge" />
+                </a>
+                <a href="viewer.html?fractal=mandelbulb" class="fractal-link">
+                    <img src="fractals/mandelbulb/thumbnail.png" alt="Mandelbulb" />
+                </a>
+            </section>
+            <footer>
+                <p>By <a href="https://www.tomhutman.nl">Tom Hutman</a></p>
+            </footer>
+        </section>
     </body>
-</html> 
+</html>

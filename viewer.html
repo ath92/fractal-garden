@@ -1,0 +1,127 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Fractal garden</title><link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥦</text></svg>">
+        <style type="text/css">
+            html, body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+                overscroll-behavior: none;
+                font-size: 14px;
+            }
+            
+            body.has-pointer-lock .message {
+                display: none;
+            }
+
+            .message {
+                width: 480px;
+                max-width: 100vw;
+                position: fixed;
+                left: 50vw;
+                margin-left: max(-240px, -50vw);
+                z-index: 2;
+                padding: 2rem;
+                box-sizing: border-box;
+                line-height: 1.8rem;
+                bottom: 6rem;
+                pointer-events: none;
+                background-color: rgba(0,0,0,.8);
+                border: 1px solid rgba(255, 255, 255, .5);
+                box-shadow: 0px 8px 24px rgba(0,0,0,.4);
+                border-radius: .5rem;
+                pointer-events: all;
+                transition: .2s ease-in-out;
+            }
+            .message .desktop {
+                display: block;
+            }
+            .message .mobile {
+                display: none;
+            }
+
+            @media (max-width: 480px) {
+                .message .desktop {
+                    display: none;
+                }
+                .message .mobile {
+                    display: block;
+                }
+            }
+
+            .message.hidden {
+                bottom: -200px;
+            }
+
+            .message .text {
+                color: #ddd;
+                font-family: sans-serif;
+                font-size: 1rem;
+            }
+
+            .message .close {
+                position: absolute;
+                top: 1rem;
+                right: 1rem;
+                border: none;
+                background: transparent;
+                color: white;
+                cursor: pointer;
+            }
+
+            .help {
+                position: fixed;
+                bottom: 2rem;
+                right: 2rem;
+            }
+        </style>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta property="og:title" content="Fractal Garden" />
+        <meta property="og:url" content="https://fractal.garden" />
+        <meta property="og:image" content="thumbnail.png" />
+    </head>
+    <body>
+        <div class="container">
+        </div>
+        <div class="message">
+            <div class="text">
+                <div class="desktop">
+                    Click to look around. Scroll to change shape.<br />
+                    WASD / Arrow keys to move around. Hold shift key to go faster.<br />
+                    Press 1, 2, 3, or 4 to select performance / quality<br />
+                    <a href="https://github.com/ath92/fractal-garden" class="text">View source on Github</a>
+                </div>
+                <div class="mobile">
+                    Touch and hold to move around<br />
+                    <a href="https://github.com/ath92/fractal-garden" class="text">View source on Github</a>
+                </div>
+            </div>
+            <button class="close">
+                ✕
+            </button>
+        </div>
+        <button title="help" class="help">?</button>
+        <script type="text/javascript">
+            const message = document.querySelector(".message");
+            const help = document.querySelector(".help");
+            const close = document.querySelector(".close");
+
+            help.addEventListener("click", function show() {
+                message.classList.toggle("hidden");
+            });
+
+            close.addEventListener("click", function hide(e) {
+                e.stopPropagation();
+                message.classList.add("hidden");
+            });
+
+            if (window.innerWidth <= 800) {
+                message.classList.add("hidden");
+            }
+        </script>
+        
+        <script src="main.js"></script>
+    </body>
+</html> 

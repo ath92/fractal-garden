@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "raymarching with regl attempt",
   "scripts": {
-    "dev": "parcel index.html",
-    "build": "parcel build index.html",
+    "dev": "parcel viewer.html",
+    "build": "parcel build index.html && parcel build viewer.html",
     "server": "parcel build server/main.js --out-dir server/dist --target node && node server/dist/main.js"
   },
   "author": "Tom Hutman",

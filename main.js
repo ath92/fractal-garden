@@ -1,8 +1,13 @@
 import Regl from "regl";
-import fragmentShader from './mandelbulb.glsl';
+import fragmentShaders from './fractals/**/frag.glsl';
 import PlayerControls from './player-controls';
 import setupRenderer from './renderer';
 import 'setimmediate';
+
+const urlParams = new URLSearchParams(window.location.search);
+const fractal = urlParams.get('fractal') || 'mandelbulb';
+
+const fragmentShader = fragmentShaders[fractal];
 
 const controller = new PlayerControls();
 

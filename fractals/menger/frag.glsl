@@ -4,12 +4,19 @@ uniform vec2 offset;
 uniform vec2 repeat;
 uniform vec3 cameraPosition;
 uniform mat4 cameraDirection;
+uniform float scrollX;
+uniform float scrollY;
 
 const int MAX_ITER = 128;
 const float HIT_THRESHOLD = 0.0001;
 const float variance = 0.01;
 // const float PI = 3.14159265359;
 
+mat3 rotmat = mat3(
+    1, 0, 0,
+    0, cos(scrollX), sin(scrollX),
+    0, -sin(scrollX), cos(scrollX)
+);
 
 vec3 getRay() {
     vec2 normalizedCoords = gl_FragCoord.xy - vec2(0.5) + (offset / repeat);
@@ -34,13 +41,13 @@ vec3 opRepeat(vec3 p, vec3 distance) {
     return mod(p + 0.5 * distance, distance) - 0.5 * distance;
 }
 
-const int MENGER_ITERATIONS = 6;
+const int MENGER_ITERATIONS = 7;
 float menger(vec3 p, float b, float h) {
     float box = box(p, b);
     float holes = makeHoles(p, h);
     float scale = h;
     for (int i = 0; i < MENGER_ITERATIONS; i++) {
-        p = p + vec3(-2. * scale, -2. * scale, -2. * scale);
+        p = rotmat * p + vec3(-2. * scale, -2. * scale, -2. * scale);
         holes = max(holes, makeHoles(opRepeat(p, vec3(2. * scale)), h * scale));
         scale = scale * h;
     }
@@ -49,9 +56,9 @@ float menger(vec3 p, float b, float h) {
 
 float doModel(vec3 p) {
     return menger(
-        opRepeat(p, vec3(5.)),
-        2.,
-        1. / 3. + variance
+        opRepeat(p, vec3(10.)),
+        3.,
+        1. / 3. + scrollY / 10.
     );
 }
 // this is kinda contrived and does a bunch of stuff I'm not using right now, but I'll leave it like this for now
@@ -83,7 +90,7 @@ void main() {
 
     float brightness = 0.;
     int iterations;
-    vec3 collision = trace(cameraPosition, direction, iterations);
+    vec3 collision = trace(cameraPosition * 20., direction, iterations);
     if (iterations < MAX_ITER - 1) { // actual collision
         brightness = getIllumination(collision, iterations);
     }

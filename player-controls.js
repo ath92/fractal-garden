@@ -114,7 +114,7 @@ export default class PlayerControls {
 
         window.addEventListener("wheel", e => {
             this.scrollY += e.deltaY / 5000;
-            this.scrollX += e.deltaX / 1000;
+            this.scrollX += e.deltaX / 5000;
         });
 
         document.addEventListener('touchend', onTouchOver);
@@ -165,6 +165,7 @@ export default class PlayerControls {
             scrollY: this.scrollY,
             cameraPosition: [...this.position],
             cameraDirection: mat4.fromQuat(mat4.create(), this.direction),
+            cameraDirectionQuat: [...this.direction],
         }
     }
 }
