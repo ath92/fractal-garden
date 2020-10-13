@@ -9,7 +9,7 @@ uniform bool onlyDistance;
 uniform float scrollX;
 uniform float scrollY;
 
-const float hitThreshold = 0.0003;
+const float hitThreshold = 0.00015;
 const int MAX_ITER = 200;
 
 const vec3 spaceRepetition = vec3(3.5);
