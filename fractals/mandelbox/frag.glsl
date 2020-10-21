@@ -32,7 +32,7 @@ vec3 opRepeat(vec3 p, vec3 distance) {
 // from https://strangerintheq.github.io/sdf.html
 float fixed_radius2 = 5.5;
 float min_radius2 = 0.5;
-float folding_limit = 1.0;
+float folding_limit = 1.5 + sin(scrollY) * .8;
 float scale = 24.;
 
 void sphere_fold(inout vec3 p, inout float dp) {
@@ -53,7 +53,7 @@ void box_fold(inout vec3 p, inout float dp) {
 }
 
 float mandelbox(vec3 p) {
-     float scale = 4. + sin(scrollY)*0.5;
+     float scale = 4.;
      float dr = 1.;
      vec3 offset = p;
      for (int n = 0; n < 10; ++n) {
@@ -129,7 +129,7 @@ float trace(vec3 origin, vec3 direction, out vec3 collision, out int iterations,
         }
         float y = d*d/(2.0*pd);
         float h = sqrt(d*d-y*y);
-        res = min( res, k*h/max(0.0,t-y) );
+        res = min( res, k*h/max(0.,t-y) );
         pd = d;
         t += d;
     }
