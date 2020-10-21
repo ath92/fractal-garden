@@ -108,6 +108,7 @@ float trace(vec3 origin, vec3 direction, out vec3 collision, out int iterations,
     fog = max(0., (distance(position, origin) - fogNear) / (fogFar - fogNear));
     if (iterations == CAMERA_ITERATIONS || distanceTraveled > fogFar) {
         iterations = 0;
+        fog = 1.;
         return dot(direction, light);
     }
     collision = position;
