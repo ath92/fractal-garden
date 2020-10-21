@@ -24,7 +24,7 @@ export default class PlayerControls {
         this.speed = vec3.fromValues(0, 0, 0.01);
         this.mouseSensitivity = mouseSensitivity;
         this.touchSensitivity = touchSensitivity;
-        this.position = vec3.fromValues(0, 0, -1);
+        this.position = vec3.fromValues(0, 0, -9);
         this.direction = quat.create();
         this.isPanning = false;
         this.mouseX = 0;

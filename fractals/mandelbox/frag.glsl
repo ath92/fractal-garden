@@ -76,9 +76,7 @@ float doModel(vec3 p) {
     // return min(ground(p, 2.), menger(opRepeat(p, vec3(10., 0., 5.)), 3., 1. / 2.));
 }
 
-vec3 calcNormal( vec3 p ) // for function f(p)
-{
-    const float h = hitThreshold * 10.; // replace by an appropriate value
+vec3 calcNormal(vec3 p, float h) {
     const vec2 k = vec2(1,-1);
     return normalize( k.xyy*doModel( p + k.xyy*h ) + 
                       k.yyx*doModel( p + k.yyx*h ) + 
@@ -86,7 +84,7 @@ vec3 calcNormal( vec3 p ) // for function f(p)
                       k.xxx*doModel( p + k.xxx*h ) );
 }
 
-vec3 light = normalize(vec3(sin(scrollX), 5, cos(scrollX)));
+vec3 light = normalize(vec3(sin(scrollX), 3, cos(scrollX)));
 const float mint = 5. * hitThreshold;
 const float maxt = 1.;
 const float k = 8.;
@@ -97,10 +95,12 @@ float trace(vec3 origin, vec3 direction, out vec3 collision, out int iterations,
     vec3 position = origin;
     float distanceTraveled = 0.;
     float d = 0.;
+    float h = hitThreshold;
     for(int i = 0; i <= CAMERA_ITERATIONS; i++) {
         iterations = i;
         d = doModel(position);
-        if (d < hitThreshold) break;
+        h = max(hitThreshold * distanceTraveled, hitThreshold / 20.);
+        if (d < h) break;
         position += d * direction;
         distanceTraveled += d;
         if (distanceTraveled > fogFar) break;
@@ -111,7 +111,7 @@ float trace(vec3 origin, vec3 direction, out vec3 collision, out int iterations,
         return dot(direction, light);
     }
     collision = position;
-    vec3 n = calcNormal(collision);
+    vec3 n = calcNormal(collision, h);
     float t = mint;
     float res = 1.0;
     float pd = 1e1;
@@ -161,7 +161,7 @@ void main() {
     int iterations;
     vec3 collision;
     float fog;
-    float lightStrength = trace(cameraPosition * 10. + vec3(0, 3, 5), direction, collision, iterations, fog);
+    float lightStrength = trace(cameraPosition * 10. + vec3(0, 2, 7.7), direction, collision, iterations, fog);
 
     float fogColor = dot(direction, light);
 
