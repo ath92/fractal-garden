@@ -54,6 +54,14 @@ export default class PlayerControls {
             if (code === 'KeyA' || code === 'ArrowLeft') this.directionKeys.left = value;
             if (code === 'KeyD' || code === 'ArrowRight') this.directionKeys.right = value;
             this.sprintMode = shiftKey;
+
+            if (type === 'keydown' && code === 'KeyF') {
+                if (!!document.pointerLockElement) {
+                    document.exitPointerLock();
+                } else {
+                    document.querySelector('body').requestPointerLock();
+                }
+            }
         };
 
         document.addEventListener('keydown', this.handleKeyboardEvent);
@@ -64,14 +72,6 @@ export default class PlayerControls {
                 return;
             }
             this.isPanning = true;
-            const requestPointerLock = () => {
-                if (e.target.tagName !== 'CANVAS') {
-                    return;
-                }
-                document.querySelector('body').requestPointerLock();
-            }
-            document.addEventListener('mouseup', requestPointerLock);
-            setTimeout(() => document.removeEventListener('mouseup', requestPointerLock), 300);
         });
 
         document.addEventListener('mouseup', (e) => {
@@ -80,11 +80,10 @@ export default class PlayerControls {
 
         document.addEventListener('pointerlockchange', () => {
             this.isPanning = !!document.pointerLockElement;
-            this.onPointerLock(this.isPanning);
         }, false);
 
         document.addEventListener('mousemove', e => {
-            if (!this.isPanning) return;
+            if (!this.isPanning && !this.isTouching) return;
             this.hasMovedSinceMousedown = true;
             this.mouseX += e.movementX * this.mouseSensitivity;
             this.mouseY += e.movementY * this.mouseSensitivity;
@@ -98,7 +97,6 @@ export default class PlayerControls {
             this.touchY = y;
             this.touchStartX = x;
             this.touchStartY = y;
-            this.onPointerLock(true);
         });
 
         document.addEventListener('touchmove', e => {

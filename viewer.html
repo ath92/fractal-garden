@@ -58,7 +58,7 @@
             }
 
             .message .text {
-                color: #bbb;
+                color: #ccc;
                 font-family: 'Fira Sans', Arial, Helvetica, sans-serif;
                 font-weight: 300;
                 font-size: 1rem;
@@ -79,6 +79,10 @@
                 bottom: 2rem;
                 right: 2rem;
             }
+
+            canvas {
+                cursor: grab;
+            }
         </style>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta property="og:title" content="Fractal Garden" />
@@ -88,13 +92,13 @@
     <body>
         <div class="container">
         </div>
-        <div class="message hidden">
+        <div class="message">
             <div class="text">
                 <div class="desktop">
-                    Click to look around. Scroll to change shape.<br />
-                    WASD / Arrow keys to move around. Hold shift key to go faster.<br />
-                    Press 1, 2, 3, or 4 to select performance / quality<br />
-                    <a href="https://github.com/ath92/fractal-garden" class="text">View source on Github</a>
+                    <b>Click and drag</b> to look around. <b>Scroll</b> to change shape.<br />
+                    <b>WASD / Arrow keys</b> to move around. Hold <b>shift</b> key to go faster.<br />
+                    Press <b>1, 2, 3,</b> or <b>4</b> to select performance / quality. <br />
+                    Press <b>F</b> to hide the cursor.
                 </div>
                 <div class="mobile">
                     Touch and hold to move around<br />
