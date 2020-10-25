@@ -226,7 +226,7 @@ document.addEventListener('keydown', e => {
             instance.getFrameStates((state) => frames.push({ time: Date.now(), state }));
         } else {
             console.log(frames);
-            fetch('http://localhost:3000/render', {
+            fetch(`http://localhost:3000/render/${fractal}`, {
                 headers: {
                   'Accept': 'application/json',
                   'Content-Type': 'application/json'

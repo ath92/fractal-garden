@@ -11,7 +11,6 @@ const port = 3000;
 
 const width = 1920;
 const height = 1080;
-const headless = headlessRenderer(width, height);
 
 const transformFrames = (frames) => {
     return frames.map(frame => {
@@ -30,7 +29,9 @@ app.get('/', (req, res) => {
   res.send('Hello World!')
 });
 
-app.post('/render', async (req, res) => {
+app.post('/render/:fractal', async (req, res) => {
+    console.log(req.params);
+    const headless = headlessRenderer(req.params.fractal, width, height);
     // console.log(req.body);
     const frames = headless.renderFrames(transformFrames(req.body?.frames));
     const dir = `./render-results/${cuid()}`;

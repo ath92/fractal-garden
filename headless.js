@@ -1,9 +1,12 @@
 import Regl from "regl";
-import frag from './mandelbulb.glsl';
+import fragmentShaders from './fractals/**/frag.glsl';
+// import frag from './mandelbulb.glsl';
 import passThroughVert from './pass-through-vert.glsl';
 import headlessGL from "gl";
 
-const setup = (width = 1000, height = 1000) => {
+const setup = (fractal = 'mandelbulb', width = 1000, height = 1000) => {
+    const fragmentShader = fragmentShaders[fractal];
+
     const repeat = [1, 1];
     const offsets = [];
 
@@ -33,7 +36,7 @@ const setup = (width = 1000, height = 1000) => {
     ]);
 
     const renderSDF = regl({
-        frag,
+        frag: fragmentShader,
         vert: passThroughVert.replace("#define GLSLIFY 1", ""),
         uniforms: {
             screenSize: regl.prop('screenSize'),
