@@ -20,7 +20,6 @@ vec3 getRay(vec2 xy) {
     vec2 normalizedCoords = xy - vec2(0.5) + (offset / repeat);
     vec2 pixel = (normalizedCoords - 0.5 * screenSize) / min(screenSize.x, screenSize.y);
 
-    // as if the higher the pixel value, the more the offset is being applied
     // normalize to get unit vector
     return (cameraDirection * normalize(vec4(pixel.x, pixel.y, 1, 0))).xyz;
 }
@@ -73,7 +72,7 @@ float ground(vec3 p, float y) {
 
 float doModel(vec3 p) {
     return mandelbox(opRepeat(p, vec3(10., 0., 10.)));
-    // return min(ground(p, 2.), menger(opRepeat(p, vec3(10., 0., 5.)), 3., 1. / 2.));
+    // return menger(opRepeat(p, vec3(10., 0., 5.)), 3., 1. / 2.));
 }
 
 vec3 calcNormal(vec3 p, float h) {
@@ -133,7 +132,7 @@ float trace(vec3 origin, vec3 direction, out vec3 collision, out int iterations,
         pd = d;
         t += d;
     }
-    return max(0., sqrt(res) * dot(n, light));
+    return max(0., res * dot(n, light));
 }
 
 float occlusion(int iterations) {
@@ -167,7 +166,7 @@ void main() {
     float fogColor = dot(direction, light);
 
     float d = distance(collision, cameraPosition);
-    float ol = .3;
+    float ol = .25;
     gl_FragColor = vec4(
         vec3((ol * occlusion(iterations) + (1. - ol) * lightStrength) * (1. - fog) + fog * fogColor),
         1.
