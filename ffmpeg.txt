@@ -1,0 +1,5 @@
+Render video from PNGs:
+ffmpeg -i frame-%1d.png -pix_fmt yuv420p out.mp4
+
+Flip video:
+ffmpeg -i out.mp4 -vf vflip -c:a copy out-flip.mp4
