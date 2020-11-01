@@ -2,3 +2,4 @@
 /dist
 /.cache
 /render-results
+/server/dist

@@ -40,14 +40,19 @@ app.post('/render/:fractal', async (req, res) => {
 
     fs.mkdirSync(dir);
     (function step(i = 0) {
+        const start = Date.now();
+        console.log("start frame", Date.now() - start);
         let { value: frame, done } = frames.next();
+        console.log("done rendering", Date.now() - start);
         if (done) return;
         const data = Buffer.from(frame);
+        console.log("created buffer", Date.now() - start);
         console.log(data);
         writePngFileSync(`${dir}/frame-${i}.png`, data, {
             width,
             height,
         });
+        console.log("wrote file", Date.now() - start);
         step(i + 1);
     })();
 
