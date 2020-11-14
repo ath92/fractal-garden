@@ -92,11 +92,8 @@ const init = (performance) => {
     let height = Math.min(window.innerHeight, width * (window.innerHeight / window.innerWidth));
     while (width % repeat[0]) width--;
     while (height % repeat[1]) height--;
-
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    canvas.width = width * window.devicePixelRatio;
-    canvas.height = height * window.devicePixelRatio;
+    canvas.width = width;
+    canvas.height = height;
     const context = canvas.getContext("webgl", {
         preserveDrawingBuffer: true,
         desynchronized: true,
@@ -115,7 +112,7 @@ const init = (performance) => {
     
     // This controls the FPS (not in an extremely precise way, but good enough)
     // 60fps + 4ms timeslot for drawing to canvas and doing other things
-    const threshold = 1000 / 60 - 4;
+    const threshold = 1000 / 120;
     
     // This essentially checks if the state has changed by doing a deep equals
     // If there are changes, it returns a new object so in other places, we can just check if the references are the same
