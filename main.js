@@ -88,8 +88,8 @@ const init = (performance) => {
     canvas = document.createElement('canvas');
     document.querySelector('.container').appendChild(canvas);
     // resize to prevent rounding errors
-    let width = window.innerWidth;
-    let height = window.innerHeight;
+    let width = Math.min(window.innerWidth, 1920);
+    let height = Math.min(window.innerHeight, width * (window.innerHeight / window.innerWidth));
     while (width % repeat[0]) width--;
     while (height % repeat[1]) height--;
 
