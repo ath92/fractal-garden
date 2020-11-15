@@ -11,7 +11,7 @@ uniform float scrollY;
 
 const float hitThreshold = 0.00003;
 
-const int CAMERA_ITERATIONS = 150;
+const int CAMERA_ITERATIONS = 240;
 const int LIGHT_ITERATIONS= 30;
 
 const vec3 spaceRepetition = vec3(12);
