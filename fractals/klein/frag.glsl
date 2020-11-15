@@ -16,6 +16,14 @@ const int LIGHT_ITERATIONS= 30;
 
 const vec3 spaceRepetition = vec3(12);
 
+const float theta = .5 * 3.14;
+// rotation matrix used to rotate the scene 90deg around x axis
+const mat3 rotmat = mat3(
+    1, 0, 0,
+    0, cos(theta), -sin(theta),
+    0, sin(theta), cos(theta)
+);
+
 vec3 getRay(vec2 xy) {
     vec2 normalizedCoords = xy - vec2(0.5) + (offset / repeat);
     vec2 pixel = (normalizedCoords - 0.5 * screenSize) / min(screenSize.x, screenSize.y);
@@ -24,8 +32,8 @@ vec3 getRay(vec2 xy) {
     return normalize((cameraDirection * vec4(pixel.x, pixel.y, 1, 0)).xyz);
 }
 
-const vec4 param_min = vec4(-0.8323, -0.694, -0.5045, 0.8067);
-const vec4 param_max = vec4(0.8579, 1.0883, 0.8937, 0.9411);
+const vec4 param_min = vec4(-0.8323, -0.694, -0.1045, 0.8067);
+const vec4 param_max = vec4(0.85, 2.0, 0.9, 0.93);
 const int FOLDING_NUMBER = 9;
 float doModel(vec3 p)
 {
@@ -35,7 +43,7 @@ float doModel(vec3 p)
     vec3 q = p;
     for (int i = 0; i < FOLDING_NUMBER; i++)
 	{
-        p = (1.9 + .1 * sin(scrollY)) * clamp(p, param_min.xyz, param_max.xyz) - p;
+        p = (1.9 + .1 * sin(scrollY + .5)) * clamp(p, param_min.xyz, param_max.xyz) - p;
 	    q = 2. * fract(0.5 * q + 0.5) - 1.0;
 	    rp2 = dot(p, p);
         rq2 = dot(q, q);
@@ -58,11 +66,11 @@ vec3 calcNormal(vec3 p, float h) {
                       k.xxx*doModel( p + k.xxx*h ) );
 }
 
-vec3 light = normalize(vec3(sin(scrollX), 3, -cos(scrollX)));
+vec3 light = rotmat * normalize(vec3(sin(scrollX - 1.6), 3, cos(scrollX)));
 const float mint = 5. * hitThreshold;
 const float maxt = 1.;
 const float k = 8.;
-const float fogNear = 1.;
+const float fogNear = 2.;
 const float fogFar = 4.;
 // this is kinda contrived and does a bunch of stuff I'm not using right now, but I'll leave it like this for now
 float trace(vec3 origin, vec3 direction, out vec3 collision, out int iterations, out float fog) {
@@ -131,12 +139,12 @@ vec3 getColor(float it, float d) {
 }
 
 void main() {
-    vec3 direction = getRay(gl_FragCoord.xy);
+    vec3 direction = rotmat * getRay(gl_FragCoord.xy);
 
     int iterations;
     vec3 collision;
     float fog;
-    float lightStrength = trace(cameraPosition * 2. + vec3(-3.5, .1, 13.5), direction, collision, iterations, fog);
+    float lightStrength = trace(rotmat * (cameraPosition * 2.) + vec3(1.4, 10.5, 1.1), direction, collision, iterations, fog);
 
     float fogColor = dot(direction, light);
 
