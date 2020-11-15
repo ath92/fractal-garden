@@ -15,9 +15,9 @@
     "express": "^4.17.1",
     "gl": "^4.8.0",
     "gl-matrix": "^3.2.1",
-    "node-libpng": "^0.2.17",
     "regl": "^1.4.2",
-    "setimmediate": "^1.0.5"
+    "setimmediate": "^1.0.5",
+    "sharp": "^0.26.2"
   },
   "devDependencies": {
     "@babel/cli": "^7.11.6",

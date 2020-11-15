@@ -1,7 +1,7 @@
 import headlessRenderer from '../headless.js';
 import express from "express";
 import cors from "cors";
-import { writePngFile, writePngFileSync } from "node-libpng";
+import sharp from "sharp";
 import fs from "fs";
 import cuid from "cuid";
 const app = express();
@@ -39,7 +39,7 @@ app.post('/render/:fractal', async (req, res) => {
     console.log("going to render", frames.length, "frames");
 
     fs.mkdirSync(dir);
-    (function step(i = 0) {
+    (async function step(i = 0) {
         const start = Date.now();
         console.log("start frame", Date.now() - start);
         let { value: frame, done } = frames.next();
@@ -48,11 +48,18 @@ app.post('/render/:fractal', async (req, res) => {
         const data = Buffer.from(frame);
         console.log("created buffer", Date.now() - start);
         console.log(data);
-        writePngFileSync(`${dir}/frame-${i}.png`, data, {
-            width,
-            height,
-        });
-        console.log("wrote file", Date.now() - start);
+        try {
+            const outputInfo = await sharp(data, {
+                raw: {
+                    width,  
+                    height,
+                    channels: 4,
+                },
+            }).toFile(`${dir}/frame-${i}.png`);
+            console.log("wrote file", outputInfo, Date.now() - start);
+        } catch (e) {
+            console.warn(e);
+        }
         step(i + 1);
     })();
 

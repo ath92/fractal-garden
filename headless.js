@@ -68,7 +68,7 @@ const setup = (fractal = 'mandelbulb', width = 1000, height = 1000) => {
         return regl.read();
     }
 
-    function* renderFrames(frames, fps = 60) {
+    function* renderFrames(frames, fps = 30) {
         const first = frames[0];
         const last = frames[frames.length - 1];
         const timespan = (last.time - first.time);
