@@ -1,11 +1,12 @@
-# Fractal.garden
 
-[Explore fractals in your browser](https://fractal.garden)
+<h1 align="center">Fractal.garden</h1>
+<p align="center">
+  <a href="https://fractal.garden">Explore fractals in your browser in real time</a>
+  <br />
+  <br />    
+  <img src="readme.gif" alt="animated" />
+</p>
 
-![Mandelbox fractal](fractals/mandelbox/thumbnail.png?raw=true "Mandelbox")
+Fractal.garden is an interactive 3d fractal explorer. The fractals are rendered using a technique called [raymarching](https://www.iquilezles.org/www/articles/raymarchingdf/raymarchingdf.htm). The images are rendered at mostly acceptable framerates using WebGL (through a library called [regl](https://github.com/regl-project/regl)). To ensure that framerates stay interactive, images can be set to render at a lower resolution first, after which multiple lower-resolution images are sequentially combined into a full-resolution end result. If the renderer runs out of time while generating a frame, it can render one of the intermediate steps. This means it prioritizes interactivity over image quality.
 
-This is an experiment around raymarched 3d fractals. The goal was to allow users to explore these fractals in realtime at a decent framerate.
-
-To read more about how to generate these fractals using shaders/webgl, check out the articles written by [Inigo Quilez](https://www.iquilezles.org/). In short, we draw two triangles that fill the entire window. After that, we can use a fragment shader to draw the fractal. This is run separately for each pixel, which means we can exploit the GPU to heavily parallelize things. That said, things get more expensive with a larger resolution, so achieving a reasonable framerate at full screen is not trivial.
-
-To get a somewhat better framerate, rendering is broken up into steps. Each step renders the scene at a fraction (e.g. 1/16th) of the final resolution. After each step, the new image and what had already been rendered are combined to produce a higher fidelity image. This is repeated until there is no more time left within a frame, or until the scene has been rendered at full resolution.
+This project also contains a headless rendering server, which can turn a set of frames (each of which contains the state needed to render an image) into a set of png images, one per frame. These can then be combined into a video (or the gif in this readme) using ffmpeg.
