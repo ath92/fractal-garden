@@ -15,6 +15,7 @@
     "express": "^4.17.1",
     "gl": "^4.8.0",
     "gl-matrix": "^3.2.1",
+    "parcel-bundler": "^1.12.5",
     "regl": "^1.4.2",
     "setimmediate": "^1.0.5",
     "sharp": "^0.26.2"
