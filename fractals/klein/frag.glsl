@@ -32,6 +32,9 @@ vec3 getRay(vec2 xy) {
     return normalize((cameraDirection * vec4(pixel.x, pixel.y, 1, 0)).xyz);
 }
 
+// see e.g. http://blog.hvidtfeldts.net/index.php/2012/05/distance-estimated-3d-fractals-part-viii-epilogue/
+// for more info
+
 const vec4 param_min = vec4(-0.8323, -0.694, -0.1045, 0.8067);
 const vec4 param_max = vec4(0.85, 2.0, 0.9, 0.93);
 const int FOLDING_NUMBER = 9;
