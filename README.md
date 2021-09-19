@@ -1,7 +1,7 @@
 
 <h1 align="center">Fractal.garden</h1>
 <p align="center">
-  <a href="https://fractal.garden">Explore fractals in your browser in real time</a>
+  <a href="https://fractal-garden.netlify.app">Explore fractals in your browser in real time</a>
   <br />
   <br />    
   <img src="readme.gif" alt="animated" />
