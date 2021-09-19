@@ -106,6 +106,7 @@
                     <b>WASD / Arrow keys</b> to move around. Hold <b>shift</b> key to go faster.<br />
                     Press <b>1, 2, 3,</b> or <b>4</b> to select performance / quality. <br />
                     Press <b>F</b> to hide the cursor.
+                    <a href="https://github.com/ath92/fractal-garden" class="text"><b>View source on Github</b></a>
                 </div>
                 <div class="mobile">
                     Touch and hold to move around<br />
@@ -122,13 +123,25 @@
             const help = document.querySelector(".help");
             const close = document.querySelector(".close");
 
+            function hideMessage() {
+                message.classList.add("hidden");
+            }
+
+            let everHidden = false;
+            function autoHideMessage() {
+                if (!everHidden) {
+                    hideMessage();
+                    everHidden = true;
+                }
+            }
+
             help.addEventListener("click", function show() {
                 message.classList.toggle("hidden");
             });
 
             close.addEventListener("click", function hide(e) {
                 e.stopPropagation();
-                message.classList.add("hidden");
+                hideMessage();
             });
         </script>
         

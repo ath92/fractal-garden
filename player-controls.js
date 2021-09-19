@@ -143,6 +143,7 @@ export default class PlayerControls {
         if (this.directionKeys.backward) vec3.add(diff, diff, backward);
         if (this.directionKeys.left) vec3.add(diff, diff, left);
         if (this.directionKeys.right) vec3.add(diff, diff, right);
+        if (typeof autoHideMessage === "function" && vec3.length(diff) > 1.1) autoHideMessage();
         // vec3.normalize(diff, diff);
         vec3.transformQuat(diff, diff, this.direction);
         vec3.scale(diff, diff, (this.sprintMode ? 4 : 1) * this.acceleration);

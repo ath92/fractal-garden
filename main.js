@@ -10,7 +10,7 @@ const fractal = urlParams.get('fractal') || 'mandelbulb';
 const fragmentShader = fragmentShaders[fractal];
 
 const controlsMap = {
-    klein: [0.001]
+    klein: [0.0005]
 }
 
 const controller = new PlayerControls(...(controlsMap[fractal] || {}));
