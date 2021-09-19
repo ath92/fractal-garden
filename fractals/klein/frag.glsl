@@ -14,7 +14,7 @@ const float hitThreshold = 0.00003;
 const int CAMERA_ITERATIONS = 240;
 const int LIGHT_ITERATIONS= 30;
 
-const vec3 spaceRepetition = vec3(12, 6, 6);
+const vec3 spaceRepetition = vec3(12, 5.15, 6);
 
 const float theta = 0.5 * 3.14;
 // rotation matrix used to rotate the scene 90deg around x axis
@@ -32,6 +32,10 @@ vec3 getRay(vec2 xy) {
     return normalize((cameraDirection * vec4(pixel.x, pixel.y, 1, 0)).xyz);
 }
 
+vec3 opRepeat(vec3 p, vec3 distance) {
+    return mod(p + 0.5 * distance, distance) - 0.5 * distance;
+}
+
 // see e.g. http://blog.hvidtfeldts.net/index.php/2012/05/distance-estimated-3d-fractals-part-viii-epilogue/
 // for more info
 
@@ -40,6 +44,7 @@ const vec4 param_max = vec4(0.85, 2.0, 0.9, 0.93);
 const int FOLDING_NUMBER = 9;
 float doModel(vec3 p)
 {
+    p = opRepeat(p, spaceRepetition);
     float k1, k2, rp2, rq2;
     float scale = 1.0;
     float orb = 1e4;
