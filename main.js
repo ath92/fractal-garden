@@ -9,7 +9,11 @@ const fractal = urlParams.get('fractal') || 'mandelbulb';
 
 const fragmentShader = fragmentShaders[fractal];
 
-const controller = new PlayerControls();
+const controlsMap = {
+    klein: [0.001]
+}
+
+const controller = new PlayerControls(...(controlsMap[fractal] || {}));
 
 const getRenderSettings = (performance) => {
     // On small screens, we do less upsampling, to reduce the amount of overhead introduced
@@ -199,7 +203,7 @@ const init = (performance) => {
 }
 
 
-let perf = 3;
+let perf = 2;
 let instance = init(perf);
 // reinit on resize
 window.addEventListener('resize', () => {
