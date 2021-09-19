@@ -14,9 +14,9 @@ const float hitThreshold = 0.00003;
 const int CAMERA_ITERATIONS = 240;
 const int LIGHT_ITERATIONS= 30;
 
-const vec3 spaceRepetition = vec3(12);
+const vec3 spaceRepetition = vec3(12, 6, 6);
 
-const float theta = .5 * 3.14;
+const float theta = 0.5 * 3.14;
 // rotation matrix used to rotate the scene 90deg around x axis
 const mat3 rotmat = mat3(
     1, 0, 0,
@@ -141,20 +141,35 @@ vec3 getColor(float it, float d) {
     ));
 }
 
+vec3 a = vec3(0.5, 0.5, 0.7);
+vec3 b = vec3(0.5, 0.5, 1.0);
+vec3 c =   vec3(5.0, 1.0, 0.0);
+vec3 d = vec3(1.1, 1.0, 1.);
+vec3 color(in float t)
+{
+    return a + b * cos(6.28318 * (c * t + d));
+}
+
 void main() {
     vec3 direction = rotmat * getRay(gl_FragCoord.xy);
 
     int iterations;
     vec3 collision;
     float fog;
-    float lightStrength = trace(rotmat * (cameraPosition * 2.) + vec3(1.4, 10.5, 1.1), direction, collision, iterations, fog);
+    float lightStrength = trace(rotmat * (cameraPosition * 2.) + vec3(1.4, 9.5, 1.1), direction, collision, iterations, fog);
 
     float fogColor = dot(direction, light);
+
+    vec3 normal = calcNormal(collision, hitThreshold);
+
+    float ambient = 1.;
+    fog = (1. - ambient) * fog;
 
     float d = distance(collision, cameraPosition);
     float ol = .25;
     gl_FragColor = vec4(
-        vec3((ol * occlusion(iterations) + (1. - ol) * lightStrength) * (1. - fog) + fog * fogColor),
+        color(normal.x + normal.z) * vec3((ol * occlusion(iterations) + (2. - ol) * lightStrength) * (1. - fog) + fog * fogColor),
         1.
     );
+    // gl_FragColor = vec4(normal, 1.);
 }
