@@ -146,10 +146,10 @@ vec3 getColor(float it, float d) {
     ));
 }
 
-vec3 a = vec3(0.5, 0.5, 0.7);
-vec3 b = vec3(0.5, 0.5, 1.0);
-vec3 c =   vec3(6.0, 1.0, 0.0);
-vec3 d = vec3(1.1, 1.0, 1.);
+vec3 a = vec3(0.5, 0.5, 0.5);
+vec3 b = vec3(0.5, 0.5, 0.5);
+vec3 c =   vec3(0.3, 0.3, 0.0);
+vec3 d = vec3(1.05, 1.0, 1.0);
 vec3 color(in float t)
 {
     return a + b * cos(6.28318 * (c * t + d));
@@ -173,7 +173,7 @@ void main() {
     float d = distance(collision, cameraPosition);
     float ol = .25;
     gl_FragColor = vec4(
-        color(normal.x * normal.z * normal.z) * vec3((ol * occlusion(iterations) + (2. - ol) * lightStrength) * (1. - fog) + fog * fogColor),
+        color(dot(normal, direction)) * vec3((ol * occlusion(iterations) + (2. - ol) * lightStrength) * (1. - fog) + fog * fogColor),
         1.
     );
     // gl_FragColor = vec4(normal, 1.);
