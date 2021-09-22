@@ -12,7 +12,7 @@ uniform float scrollY;
 const float hitThreshold = 0.00003;
 
 const int CAMERA_ITERATIONS = 240;
-const int LIGHT_ITERATIONS= 30;
+const int LIGHT_ITERATIONS= 0;
 
 const vec3 spaceRepetition = vec3(12, 5.15, 6);
 
@@ -78,8 +78,8 @@ vec3 light = rotmat * normalize(vec3(sin(scrollX - 1.6), 3, cos(scrollX)));
 const float mint = 5. * hitThreshold;
 const float maxt = 1.;
 const float k = 8.;
-const float fogNear = 2.;
-const float fogFar = 4.;
+const float fogNear = 1.;
+const float fogFar = 100.;
 // this is kinda contrived and does a bunch of stuff I'm not using right now, but I'll leave it like this for now
 float trace(vec3 origin, vec3 direction, out vec3 collision, out int iterations, out float fog) {
     vec3 position = origin;
@@ -89,13 +89,14 @@ float trace(vec3 origin, vec3 direction, out vec3 collision, out int iterations,
     for(int i = 0; i <= CAMERA_ITERATIONS; i++) {
         iterations = i;
         d = doModel(position);
-        h = max(hitThreshold * distanceTraveled, hitThreshold);
+        h = max(hitThreshold * distanceTraveled * distanceTraveled, hitThreshold);
         if (d < h) break;
         position += d * direction;
         distanceTraveled += d;
         if (distanceTraveled > fogFar) break;
     }
-    fog = max(0., (distance(position, origin) - fogNear) / (fogFar - fogNear));
+    float iterationFog = float(iterations) / float(CAMERA_ITERATIONS);
+    fog = max(iterationFog, (distance(position, origin) - fogNear) / (fogFar - fogNear));
     if (iterations == CAMERA_ITERATIONS || distanceTraveled > fogFar) {
         iterations = 0;
         fog = 1.;
@@ -103,27 +104,27 @@ float trace(vec3 origin, vec3 direction, out vec3 collision, out int iterations,
     }
     collision = position;
     vec3 n = calcNormal(collision, h);
-    float t = mint;
-    float res = 1.0;
-    float pd = 1e1;
-    for (int i = 0; i < LIGHT_ITERATIONS; i++) {
-        position = collision + light * t;
-        d = doModel(position);
-        if (d < hitThreshold){
-            return 0.;
-            // return (t - mint) / (maxt - mint);
-        };
-        if (t > maxt) {
-            res = 1.;
-            break;
-        }
-        float y = d*d/(2.0*pd);
-        float h = sqrt(d*d-y*y);
-        res = min( res, k*h/max(0.,t-y) );
-        pd = d;
-        t += d;
-    }
-    return max(0., res * dot(n, light));
+    // float t = mint;
+    // float res = 1.0;
+    // float pd = 1e1;
+    // for (int i = 0; i < LIGHT_ITERATIONS; i++) {
+    //     position = collision + light * t;
+    //     d = doModel(position);
+    //     if (d < hitThreshold){
+    //         return 0.;
+    //         // return (t - mint) / (maxt - mint);
+    //     };
+    //     if (t > maxt) {
+    //         res = 1.;
+    //         break;
+    //     }
+    //     float y = d*d/(2.0*pd);
+    //     float h = sqrt(d*d-y*y);
+    //     res = min( res, k*h/max(0.,t-y) );
+    //     pd = d;
+    //     t += d;
+    // }
+    return max(0., dot(n, light));
 }
 
 float occlusion(int iterations) {
@@ -163,18 +164,15 @@ void main() {
     float fog;
     float lightStrength = trace(rotmat * (cameraPosition * 2.) + vec3(1.4, 9.5, 1.1), direction, collision, iterations, fog);
 
-    float fogColor = dot(direction, light);
+    vec3 fogColor = vec3(dot(direction, light));
 
     vec3 normal = calcNormal(collision, hitThreshold);
 
-    float ambient = 1.;
-    fog = (1. - ambient) * fog;
-
-    float d = distance(collision, cameraPosition);
+    // float d = distance(collision, cameraPosition);
     float ol = .25;
     gl_FragColor = vec4(
-        color(dot(normal, direction)) * vec3((ol * occlusion(iterations) + (2. - ol) * lightStrength) * (1. - fog) + fog * fogColor),
+        color(normal.x * normal.y * normal.z) * mix(vec3(occlusion(iterations) * (2. - ol) * lightStrength), 2. * fogColor, fog),
         1.
     );
-    // gl_FragColor = vec4(normal, 1.);
+    // gl_FragColor = vec4(vec3(fog), 1.);
 }
