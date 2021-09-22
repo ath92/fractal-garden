@@ -16,22 +16,12 @@ const controlsMap = {
 const controller = new PlayerControls(...(controlsMap[fractal] || {}));
 
 const getRenderSettings = (performance) => {
-    // On small screens, we do less upsampling, to reduce the amount of overhead introduced
-    if (window.innerWidth <= 800) {
-        return {
-            repeat: [2, 2],
-            offsets: [
-                [1, 1],
-                [0, 1],
-                [1, 0]
-            ]
-        };
-    }
     // For larger screens
     // The render function is divided into a certain number of steps. This is done horizontally and vertically;
     // In each step 1/(x*y)th (1/x horizontal and 1/y vertical) of all pixels on the screen are rendered
     // If there is not enough time left to maintain a reasonable FPS, the renderer can bail at any time after the first step.
-    if (performance === 1) return {
+    // On small screens we do no upsampling, to reduce the amount of overhead introduced
+    if (performance === 1 || window.innerWidth <= 800) return {
         repeat: [1, 1],
         offsets: [],
     };
