@@ -75,15 +75,14 @@ vec3 calcNormal(vec3 p, float h) {
 }
 
 vec3 light = rotmat * normalize(vec3(sin(scrollX - 1.6), 3, cos(scrollX)));
-const float mint = 5. * hitThreshold;
-const float maxt = 1.;
+const float minDistance = 0.03;
 const float k = 8.;
 const float fogNear = 1.;
 const float fogFar = 100.;
 // this is kinda contrived and does a bunch of stuff I'm not using right now, but I'll leave it like this for now
 float trace(vec3 origin, vec3 direction, out vec3 collision, out int iterations, out float fog) {
-    vec3 position = origin;
-    float distanceTraveled = 0.;
+    float distanceTraveled = minDistance;
+    vec3 position = origin + minDistance * direction;
     float d = 0.;
     float h = hitThreshold;
     for(int i = 0; i <= CAMERA_ITERATIONS; i++) {
@@ -104,26 +103,6 @@ float trace(vec3 origin, vec3 direction, out vec3 collision, out int iterations,
     }
     collision = position;
     vec3 n = calcNormal(collision, h);
-    // float t = mint;
-    // float res = 1.0;
-    // float pd = 1e1;
-    // for (int i = 0; i < LIGHT_ITERATIONS; i++) {
-    //     position = collision + light * t;
-    //     d = doModel(position);
-    //     if (d < hitThreshold){
-    //         return 0.;
-    //         // return (t - mint) / (maxt - mint);
-    //     };
-    //     if (t > maxt) {
-    //         res = 1.;
-    //         break;
-    //     }
-    //     float y = d*d/(2.0*pd);
-    //     float h = sqrt(d*d-y*y);
-    //     res = min( res, k*h/max(0.,t-y) );
-    //     pd = d;
-    //     t += d;
-    // }
     return max(0., dot(n, light));
 }
 
