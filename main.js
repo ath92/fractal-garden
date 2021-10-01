@@ -16,7 +16,7 @@ const controlsMap = {
 const currentControls = controlsMap[fractal]
 let controller;
 if (currentControls){
-    controller = new PlayerControls(...(currentControls || {}))
+    controller = new PlayerControls(currentControls)
 } else {
     controller = new PlayerControls()
 }
