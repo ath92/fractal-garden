@@ -13,7 +13,13 @@ const controlsMap = {
     klein: [0.0005]
 }
 
-const controller = new PlayerControls(...(controlsMap[fractal] || {}));
+const currentControls = controlsMap[fractal]
+let controller;
+if (currentControls){
+    controller = new PlayerControls(...(currentControls || {}))
+} else {
+    controller = new PlayerControls()
+}
 
 const getRenderSettings = (performance) => {
     // For larger screens
