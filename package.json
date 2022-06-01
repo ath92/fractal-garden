@@ -18,7 +18,7 @@
     "parcel-bundler": "^1.12.5",
     "regl": "^1.4.2",
     "setimmediate": "^1.0.5",
-    "sharp": "^0.26.2"
+    "sharp": "^0.30.5"
   },
   "devDependencies": {
     "@babel/cli": "^7.11.6",
