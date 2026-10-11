@@ -1,5 +1,5 @@
 import { vec3, mat4, quat } from 'gl-matrix';
-import getCurrentDistance from './get-speed';
+import getCurrentDistance from './get-speed.js';
 
 const forward = vec3.fromValues(0, 0, 1);
 const backward = vec3.fromValues(0, 0, -1);
@@ -43,6 +43,7 @@ export default class PlayerControls {
         };
         this.sprintMode = false;
         this.isTouching = false;
+        this.time = performance.now();
 
         this.onPointerLock = () => {};
 
@@ -137,6 +138,11 @@ export default class PlayerControls {
             0
         );
     
+        // scale movement by time passed, so speed doesn't depend on the frame rate
+        const now = performance.now();
+        const frameTimeFactor = (now - this.time) / (1000 / 60);
+        this.time = now;
+
         // strafing with keys
         const diff = vec3.create();
         if (this.directionKeys.forward) vec3.add(diff, diff, forward);
@@ -146,7 +152,7 @@ export default class PlayerControls {
         if (typeof autoHideMessage === "function" && vec3.length(diff) > 1.1) autoHideMessage();
         // vec3.normalize(diff, diff);
         vec3.transformQuat(diff, diff, this.direction);
-        vec3.scale(diff, diff, (this.sprintMode ? 4 : 1) * this.acceleration);
+        vec3.scale(diff, diff, (this.sprintMode ? 4 : 1) * this.acceleration * frameTimeFactor);
         // const currentDistance = getCurrentDistance(this.position)
         vec3.scale(this.speed, this.speed, 1 - this.friction);
         if (vec3.length(this.speed) < minSpeed) {

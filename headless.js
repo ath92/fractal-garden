@@ -1,7 +1,7 @@
 import Regl from "regl";
-import fragmentShaders from './fractals/**/frag.glsl';
+import fragmentShaders from './fractals/index.js';
 // import frag from './mandelbulb.glsl';
-import passThroughVert from './pass-through-vert.glsl';
+import passThroughVert from './pass-through-vert.glsl?raw';
 import headlessGL from "gl";
 import { vec3, mat4, quat } from 'gl-matrix';
 
@@ -38,7 +38,7 @@ const setup = (fractal = 'mandelbulb', width = 1000, height = 1000) => {
 
     const renderSDF = regl({
         frag: fragmentShader,
-        vert: passThroughVert.replace("#define GLSLIFY 1", ""),
+        vert: passThroughVert,
         uniforms: {
             screenSize: regl.prop('screenSize'),
             cameraPosition: regl.prop('cameraPosition'),

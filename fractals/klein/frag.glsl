@@ -18,11 +18,20 @@ const vec3 spaceRepetition = vec3(12, 5.15, 6);
 
 const float theta = 0.5 * 3.14;
 // rotation matrix used to rotate the scene 90deg around x axis
-const mat3 rotmat = mat3(
+const mat3 xAxis = mat3(
     1, 0, 0,
     0, cos(theta), -sin(theta),
     0, sin(theta), cos(theta)
 );
+
+// and one for rotating 90deg around y axis
+const mat3 yAxis = mat3(
+    cos(theta), 0, sin(theta),
+    0, 1, 0,
+    -sin(theta), 0, cos(theta)
+);
+
+const mat3 rotmat = xAxis * yAxis;
 
 vec3 getRay(vec2 xy) {
     vec2 normalizedCoords = xy - vec2(0.5) + (offset / repeat);
@@ -74,7 +83,9 @@ vec3 calcNormal(vec3 p, float h) {
                       k.xxx*doModel( p + k.xxx*h ) );
 }
 
-vec3 light = rotmat * normalize(vec3(sin(scrollX - 1.6), 3, cos(scrollX)));
+// xyz -> xzy -> zxy
+
+vec3 light = rotmat * normalize(vec3(sin(scrollX - 1.6), 3, -cos(scrollX)));
 const float minDistance = 0.03;
 const float k = 8.;
 const float fogNear = 1.;
@@ -99,7 +110,6 @@ float trace(vec3 origin, vec3 direction, out vec3 collision, out int iterations,
     if (iterations == CAMERA_ITERATIONS || distanceTraveled > fogFar) {
         iterations = 0;
         fog = 1.;
-        return dot(direction, light);
     }
     collision = position;
     vec3 n = calcNormal(collision, h);
@@ -111,25 +121,10 @@ float occlusion(int iterations) {
     return occlusionLight;
 }
 
-// const float col = 0.05; // amount of coloring
-
-vec3 hsl2rgb( in vec3 c ) {
-    vec3 rgb = clamp( abs(mod(c.x*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0, 0.0, 1.0 );
-    return c.z + c.y * (rgb-0.5)*(1.0-abs(2.0*c.z-1.0));
-}
-
-vec3 getColor(float it, float d) {
-    return hsl2rgb(vec3(
-        d,
-        0.6,
-        pow(it, 0.8)
-    ));
-}
-
-vec3 a = vec3(0.5, 0.5, 0.7);
-vec3 b = vec3(0.5, 0.5, 1.0);
-vec3 c =   vec3(6.0, 1.0, 0.0);
-vec3 d = vec3(1.1, 1.0, 1.);
+vec3 a = vec3(.5, 0.5, 0.7); // ambient
+vec3 b = vec3(.5, .5, .9); // base color
+vec3 c = vec3(1., .5, 0.5); // color frequency
+vec3 d = vec3(1., 1., 1.); // color phase
 vec3 color(in float t)
 {
     return a + b * cos(6.28318 * (c * t + d));
@@ -141,16 +136,16 @@ void main() {
     int iterations;
     vec3 collision;
     float fog;
-    float lightStrength = trace(rotmat * (cameraPosition * 2.) + vec3(1.4, 9.5, 1.1), direction, collision, iterations, fog);
+    float lightStrength = trace(rotmat * (cameraPosition * 2.) + vec3(1.4, 9.6, 1.1), direction, collision, iterations, fog);
 
-    vec3 fogColor = vec3(dot(direction, light));
 
     vec3 normal = calcNormal(collision, hitThreshold);
+    vec3 fogColor = vec3(0.1922, 0.2353, 0.4902);
 
     // float d = distance(collision, cameraPosition);
     float ol = .25;
     gl_FragColor = vec4(
-        color(normal.x * normal.y * normal.z) * mix(vec3(occlusion(iterations) * (2. - ol) * lightStrength), 2. * fogColor, fog),
+        sqrt(distance(light, collision) / 10.) * mix(vec3(occlusion(iterations) * (2. - ol) * lightStrength), 2. * fogColor, fog),
         1.
     );
     // gl_FragColor = vec4(vec3(fog), 1.);

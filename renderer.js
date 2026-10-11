@@ -1,65 +1,81 @@
-import passThroughVert from './pass-through-vert.glsl';
-import upSampleFrag from './upsample.glsl';
+import PoissonDisk from 'fast-2d-poisson-disk-sampling';
+import passThroughVert from './pass-through-vert.glsl?raw';
+import upSampleFrag from './upsample.glsl?raw';
 
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+// Each performance level renders the SDF at 1/repeat resolution (repeat = 2 ** level).
+// Every render step uses a different sub-pixel offset; the samples are progressively blended into the
+// full-resolution screen buffer, so the image keeps refining (and anti-aliasing) while the camera is still.
 function setupRenderer({
     frag,
     regl,
-    repeat = [1, 1],
-    offsets = [],
     width,
     height,
+    maxPerformance = 4,
 }) {
-    // The FBO the actual SDF samples are rendered into
-    let sdfTexture = regl.texture({
-        width: Math.round(width / repeat[0]),
-        height: Math.round(height / repeat[1])
+    const precisionLevels = Array(maxPerformance).fill(0).map((_, i) => {
+        const repeat = 2 ** i;
+        const shape = [width / repeat, height / repeat];
+        const fbo = regl.framebuffer({
+            shape,
+            depth: false,
+            color: regl.texture({ shape }),
+        });
+
+        // Poisson disk sampling gives a uniform-ish but random spread of sub-pixel offsets
+        const offsets = new PoissonDisk({
+            shape: [repeat, repeat],
+            radius: .2,
+        }).fill();
+        shuffleArray(offsets);
+        offsets.unshift([0, 0]);
+
+        return {
+            fbo,
+            shape,
+            repeat,
+            offsets,
+        };
     });
-    const sdfFBO = regl.framebuffer({ color: sdfTexture });
-    const getSDFFBO = () => sdfFBO({ color: sdfTexture });
-    
+
     // We need a double buffer in order to progressively add samples for each render step
-    const createPingPongBuffers = textureOptions => {
-        const tex1 = regl.texture(textureOptions);
-        const tex2 = regl.texture(textureOptions);
-        const one = regl.framebuffer({
-          color: tex1
-        });
-        const two = regl.framebuffer({
-          color: tex2
-        });
-        let counter = 0;
-        return () => {
-            counter++;
-            if (counter % 2 === 0) {
-                return one({ color: tex1 });
-            }
-            return two({ color: tex2 });
-        }
-    };
-    
-    let getScreenFBO = createPingPongBuffers({
+    const createScreenBuffer = () => regl.framebuffer({
         width,
         height,
+        depth: false,
+        color: regl.texture({
+            width,
+            height,
+            mag: 'nearest',
+        }),
     });
-    
+    const screenBuffers = [createScreenBuffer(), createScreenBuffer()];
+    let pingpong = 0;
+    let previous = screenBuffers[1];
+
     // screen-filling rectangle
     const position = regl.buffer([
         [-1, -1],
         [1, -1],
         [1,  1],
-        [-1, -1],   
+        [-1, -1],
         [1, 1,],
         [-1, 1]
     ]);
-    
+
     const renderSDF = regl({
         frag,
-        vert: passThroughVert.replace("#define GLSLIFY 1", ""),
+        vert: passThroughVert,
         uniforms: {
             screenSize: regl.prop('screenSize'),
             cameraPosition: regl.prop('cameraPosition'),
             cameraDirection: regl.prop('cameraDirection'),
-            worldMat: regl.prop('worldMat'),
             offset: regl.prop('offset'),
             repeat: regl.prop('repeat'),
             scrollX: regl.prop('scrollX'),
@@ -69,20 +85,19 @@ function setupRenderer({
             position
         },
         count: 6,
+        framebuffer: regl.prop('target'),
     });
-    
+
     // render texture to screen
     const drawToCanvas = regl({
-        vert: passThroughVert.replace("#define GLSLIFY 1\n", ""),
+        vert: passThroughVert,
         frag: `
             precision highp float;
             uniform sampler2D inputTexture;
             varying vec2 uv;
-    
+
             void main () {
-              vec4 color = texture2D(inputTexture, uv * 0.5 + 0.5);
-            //   vec4 color = vec4(uv.x, uv.y, 0, 1);
-              gl_FragColor = color;
+              gl_FragColor = texture2D(inputTexture, uv * 0.5 + 0.5);
             }
         `,
         uniforms: {
@@ -92,81 +107,63 @@ function setupRenderer({
             position
         },
         count: 6,
+        // the canvas keeps its depth buffer between frames (preserveDrawingBuffer), so depth testing would discard every draw after the first
+        depth: { enable: false },
     });
-    
+
     const upSample = regl({
-        vert: passThroughVert.replace("#define GLSLIFY 1\n", ""),
-        frag: upSampleFrag.replace("#define GLSLIFY 1\n", ""),
+        vert: passThroughVert,
+        frag: upSampleFrag,
         uniforms: {
             inputSample: regl.prop('sample'), // sampler2D
             previous: regl.prop('previous'), // sampler2D
-            repeat: regl.prop('repeat'), // vec2
+            repeat: regl.prop('repeat'), // float
             offset: regl.prop('offset'), // vec2
+            step: regl.prop('step'), // float
             screenSize: regl.prop('screenSize'), // vec2
         },
         attributes: {
             position
         },
         count: 6,
+        framebuffer: regl.prop('target'),
     });
-    
-    // This generates each of the render steps, to be used in the main animation loop
-    // By pausing the execution of this function, we can let the main thread handle events, gc, etc. between steps
-    // It also allows us to bail early in case we ran out of time
-    function* generateRenderSteps(renderState){
-        const fbo = getSDFFBO();
-        fbo.use(() => {
-            renderSDF({
-                screenSize: [width / repeat[0], height / repeat[1]],
-                offset: [0,0],
-                repeat,
-                ...renderState
-            });
-            // console.log("hier moet het eigenlijk 255 zijn", regl.read());
+
+    const getStepCount = performance => precisionLevels[performance].offsets.length;
+
+    // Renders a single step (one sub-pixel offset) and blends it into the screen buffer.
+    // Returns the screen buffer containing the result so far.
+    function renderStep(renderState, performance, step) {
+        const { fbo, shape, repeat, offsets } = precisionLevels[performance];
+        const offset = offsets[step];
+        const target = screenBuffers[pingpong];
+        pingpong = 1 - pingpong;
+
+        renderSDF({
+            ...renderState,
+            screenSize: shape,
+            offset,
+            repeat: [repeat, repeat],
+            target: fbo,
         });
-        yield fbo;
-        
-        let currentScreenBuffer = getScreenFBO();
-        currentScreenBuffer.use(() => {
-            drawToCanvas({ texture: fbo });
+        upSample({
+            sample: fbo,
+            previous,
+            offset,
+            step,
+            repeat,
+            screenSize: [width, height],
+            target,
         });
-    
-        const performUpSample = (previousScreenBuffer, offset) => {
-            const newSampleFBO = getSDFFBO();
-            newSampleFBO.use(() => {
-                renderSDF({
-                    screenSize: [width / repeat[0], height / repeat[1]],
-                    offset,
-                    repeat,
-                    ...renderState
-                });
-            });
-    
-            const newScreenBuffer = getScreenFBO();
-            newScreenBuffer.use(() => {
-                upSample({
-                    sample: newSampleFBO,
-                    previous: previousScreenBuffer,
-                    repeat,
-                    offset,
-                    screenSize: [width, height],
-                });
-            });
-            return newScreenBuffer;
-        }
-    
-        for (let offset of offsets) {
-            currentScreenBuffer = performUpSample(currentScreenBuffer, offset);
-            yield currentScreenBuffer;
-        }
-        // also return the current screenbuffer so the last next() on the generator still gives a reference to what needs to be drawn
-        return currentScreenBuffer;
-    };
+        previous = target;
+        return target;
+    }
 
     return {
         regl,
         drawToCanvas, // will draw fbo to canvas (or whatever was given as regl context)
-        generateRenderSteps, // generator that yields FBOs, that can be drawn to the canvas
+        renderStep,
+        getStepCount,
     }
 }
 

@@ -14,10 +14,10 @@ This project also contains a headless rendering server, which can turn a set of 
 
 ## Installation
 
-To install, you need a system with node installed (tested on 10.x.x, anything above that should definitely be okay). Run `npm install` and then any of the folling
+To install, you need a system with a recent version of node installed (20.19+ or 22.12+, as required by Vite). Run `npm install` and then any of the following
 
 ```
-# will start a dev server (parcel)
+# will start a dev server (vite)
 npm run dev
 
 # will build the project
@@ -27,9 +27,11 @@ npm run build
 npm run server
 ```
 
+The render server depends on [headless-gl](https://github.com/stackgl/headless-gl) (`gl`), which is an optional dependency since it needs a native build. If it failed to install, the web app still works, but `npm run server` won't.
+
 ## Usage
 
-Running `npm run dev` will start a development server at `http://localhost:1234` by default. When you open this in your local browser, you'll see effectively the same as you would at `https://fractal.garden`. The page itself provides some further instruction on how to actually use the application.
+Running `npm run dev` will start a development server at `http://localhost:5173` by default. When you open this in your local browser, you'll see effectively the same as you would at `https://fractal.garden`. The page itself provides some further instruction on how to actually use the application.
 
 ### Recording
 
